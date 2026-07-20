@@ -395,7 +395,7 @@ if __name__ == "__main__":
         exit(1)
 
     os.makedirs("data", exist_ok=True)
-    generate("data/releve_cih.pdf", transactions)
+    generate("data/04_bancaire/releve_cih.pdf", transactions)
     print("✓ Releve CIH genere avec succes: simulators/data/releve_cih.pdf")
     print("Periode: Juillet-Decembre 2023 (6 mois)")
     print("Transactions bancaires realistes CIH BANK")

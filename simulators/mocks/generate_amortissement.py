@@ -9,8 +9,8 @@ from reportlab.lib.units import mm
 # CONFIGURATION ET STYLES
 # -----------------------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.join(BASE_DIR, "data")
-LOGO_DIR = os.path.join(BASE_DIR, "logos")
+DATA_DIR = os.path.join(BASE_DIR, "../data")
+LOGO_DIR = os.path.join(BASE_DIR, "../logos")
 
 os.makedirs(DATA_DIR, exist_ok=True)
 

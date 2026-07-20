@@ -381,7 +381,7 @@ if __name__ == "__main__":
         exit(1)
 
     os.makedirs("data", exist_ok=True)
-    generate("data/releve_attijari.pdf", transactions)
+    generate("data/04_bancaire/releve_attijari.pdf", transactions)
     print("✓ Releve genere avec succes: simulators/data/releve_attijari.pdf")
     print("Periode: Juillet-Decembre 2023 (6 mois)")
     print("Transactions bancaires realistes ABHS")
