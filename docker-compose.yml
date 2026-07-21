@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  # -------------------------------------------------------------
+  # 1. BASE DE DONNÉES MONGODB
+  # -------------------------------------------------------------
+  mongodb:
+    image: mongo:latest
+    container_name: credit_risk_mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: fatima1954&10062003
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - credit_risk_network
+
+  # -------------------------------------------------------------
+  # 2. DOCUMENT SERVICE
+  # ----------------- --------------------------------------------
+  document-service:
+    build:
+      context: ./document-service
+      dockerfile: Dockerfile
+    container_name: document_service
+    restart: on-failure
+    depends_on:
+      - mongodb
+    environment:
+      - MONGO_URI=mongodb://admin:fatima1954%2610062003@mongodb:27017/
+      - MONGO_DB_NAME=credit_risk_db
+    volumes:
+      - ./document-service/simulators/data:/app/simulators/data
+    networks:
+      - credit_risk_network
+
+networks:
+  credit_risk_network:
+    driver: bridge
+
+volumes:
+  mongo_data:

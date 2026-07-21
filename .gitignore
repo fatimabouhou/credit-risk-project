@@ -1,0 +1,11 @@
+# Environnements virtuels
+.venv/
+venv/
+env/
+
+# Cache Python
+__pycache__/
+*.pyc
+
+# (Optionnel) Dossier de données si tu ne veux pas versionner les PDF générés
+document-service/simulators/data/
