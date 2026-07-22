@@ -7,5 +7,11 @@ env/
 __pycache__/
 *.pyc
 
+# Variables d'environnement
+.env
+*.env
+.env.*
+!.env.example
+
 # (Optionnel) Dossier de données si tu ne veux pas versionner les PDF générés
 document-service/simulators/data/
