@@ -11,8 +11,9 @@ services:
     ports:
       - "27017:27017"
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: fatima1954&10062003
+      # Docker Compose va lire ces valeurs dans le .env
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
     volumes:
       - mongo_data:/data/db
     networks:
@@ -20,7 +21,7 @@ services:
 
   # -------------------------------------------------------------
   # 2. DOCUMENT SERVICE
-  # ----------------- --------------------------------------------
+  # -------------------------------------------------------------
   document-service:
     build:
       context: ./document-service
@@ -30,16 +31,10 @@ services:
     depends_on:
       - mongodb
     environment:
-      - MONGO_URI=mongodb://admin:fatima1954%2610062003@mongodb:27017/
-      - MONGO_DB_NAME=credit_risk_db
+      # Le service va aussi lire ces valeurs dans le .env
+      - MONGO_URI=${MONGO_URI}
+      - MONGO_DB_NAME=${MONGO_DB_NAME}
     volumes:
       - ./document-service/simulators/data:/app/simulators/data
     networks:
       - credit_risk_network
-
-networks:
-  credit_risk_network:
-    driver: bridge
-
-volumes:
-  mongo_data:

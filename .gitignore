@@ -13,5 +13,4 @@ __pycache__/
 .env.*
 !.env.example
 
-# (Optionnel) Dossier de données si tu ne veux pas versionner les PDF générés
-document-service/simulators/data/
+ document-service/simulators/data/
