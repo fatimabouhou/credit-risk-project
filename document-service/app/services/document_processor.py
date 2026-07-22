@@ -7,18 +7,20 @@ from typing import Dict, Any
 # -------------------------------------------------------------
 # GESTION DYNAMIQUE DU PYTHONPATH
 # -------------------------------------------------------------
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-if CURRENT_DIR not in sys.path:
-    sys.path.insert(0, CURRENT_DIR)
+# Ce fichier est dans app/services/ -> on remonte d'un niveau pour arriver à app/
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))   # app/services
+APP_DIR = os.path.dirname(CURRENT_DIR)                      # app/
+if APP_DIR not in sys.path:
+    sys.path.insert(0, APP_DIR)
 
-# Importation des 4 extracteurs spécialisés
-from extractors.administrative_extractor import AdministrativeExtractor
-from extractors.compliance_extractor import ComplianceExtractor
-from extractors.financial_extractor import FinancialExtractor
-from extractors.banking_extractor import BankingExtractor
+# Importation des 4 extracteurs spécialisés (depuis app/services/extractors/)
+from services.extractors.administrative_extractor import AdministrativeExtractor
+from services.extractors.compliance_extractor import ComplianceExtractor
+from services.extractors.financial_extractor import FinancialExtractor
+from services.extractors.banking_extractor import BankingExtractor
 
-# Importation du service BDD MongoDB
-from db_service import DatabaseService
+# Importation du service BDD MongoDB (depuis app/infrastructure/)
+from infrastructure.db_service import DatabaseService
 
 # -------------------------------------------------------------
 # CONFIGURATION DES LOGS
