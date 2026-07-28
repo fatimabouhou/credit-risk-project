@@ -15,6 +15,9 @@ if CURRENT_DIR not in sys.path:
 # Import de notre orchestrateur
 from services.document_processor import DocumentProcessor
 
+# Import du messager HTTP
+from infrastructure.http_client import notify_financial_service
+
 # -------------------------------------------------------------
 # INITIALISATION FASTAPI & LOGS
 # -------------------------------------------------------------
@@ -32,6 +35,30 @@ processor = DocumentProcessor()
 
 
 # -------------------------------------------------------------
+# 🔥 NOUVEAU : INITIALISATION AUTOMATIQUE DE LA BDD AU DÉMARRAGE
+# -------------------------------------------------------------
+@app.on_event("startup")
+async def initialize_database():
+    """
+    Force la création de la BDD 'credit_risk_db' et de la collection
+    'client_audits' dès que le microservice démarre dans Docker.
+    """
+    try:
+        # On accède au client MongoDB via l'instance du processor / repository
+        db = processor.repository.db
+
+        # Vérification et création explicite de la collection
+        collections = db.list_collection_names()
+        if "client_audits" not in collections:
+            db.create_collection("client_audits")
+            logger.info("📁 Collection 'client_audits' et BDD créées avec succès dans MongoDB !")
+        else:
+            logger.info("ℹ️ La collection 'client_audits' existe déjà dans MongoDB.")
+    except Exception as e:
+        logger.warning(f"⚠️ Impossible d'initialiser la BDD au démarrage : {str(e)}")
+
+
+# -------------------------------------------------------------
 # ROUTES DE L'API
 # -------------------------------------------------------------
 
@@ -46,13 +73,14 @@ def read_root():
 
 
 @app.post("/analyze/{client_id}")
-def analyze_client_folder(client_id: str) -> Dict[str, Any]:
+def analyze_client_folder(client_id: str, background_tasks: BackgroundTasks) -> Dict[str, Any]:
     """
     Route principale :
     1. Reçoit un ID client (ex: 'data').
     2. Localise son dossier de documents dans simulators/.
     3. Extrait toutes les informations des PDF.
     4. Enregistre automatiquement le JSON résultant dans MongoDB.
+    5. Notifie le financial-service en arrière-plan.
     """
     logger.info(f"Requête d'analyse reçue pour le client : {client_id}")
 
@@ -72,9 +100,12 @@ def analyze_client_folder(client_id: str) -> Dict[str, Any]:
         # Lancement de l'extraction + Sauvegarde MongoDB automatique
         audit_result = processor.process_client_folder(root_folder=folder_path, save_to_db=True)
 
+        # Notification asynchrone du financial-service
+        background_tasks.add_task(notify_financial_service, client_id)
+
         return {
             "status": "success",
-            "message": f"Dossier client '{client_id}' analysé et sauvegardé dans MongoDB !",
+            "message": f"Dossier client '{client_id}' analysé et sauvegardé. Évaluation financière déclenchée en arrière-plan.",
             "data": audit_result
         }
 

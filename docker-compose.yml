@@ -1,8 +1,6 @@
-# On retire la ligne "version" qui est obsolète
-
 services:
   # -------------------------------------------------------------
-  # 1. BASE DE DONNÉES MONGODB
+  # 1. BASE DE DONNÉES MONGODB & INTERFACE
   # -------------------------------------------------------------
   mongodb:
     image: mongo:latest
@@ -11,7 +9,6 @@ services:
     ports:
       - "27017:27017"
     environment:
-      # N'oublie pas de créer le fichier .env à côté !
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
     volumes:
@@ -19,8 +16,24 @@ services:
     networks:
       - credit_risk_network
 
+  mongo-express:
+    image: mongo-express:latest
+    container_name: mongo_express
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_USER}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_PASSWORD}
+      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongodb:27017/
+      ME_CONFIG_BASICAUTH: false
+    depends_on:
+      - mongodb
+    networks:
+      - credit_risk_network
+
   # -------------------------------------------------------------
-  # 2. DOCUMENT SERVICE
+  # 2. DOCUMENT SERVICE (Port 8000)
   # -------------------------------------------------------------
   document-service:
     build:
@@ -28,18 +41,41 @@ services:
       dockerfile: Dockerfile
     container_name: document_service
     restart: on-failure
+    ports:
+      - "8000:8000"
     depends_on:
       - mongodb
     environment:
       - MONGO_URI=${MONGO_URI}
       - MONGO_DB_NAME=${MONGO_DB_NAME}
+      # NOUVEAU : On indique comment joindre le service financier dans le réseau Docker
+      - FINANCIAL_SERVICE_URL=http://financial-service:8001
     volumes:
       - ./document-service/simulators/data:/app/simulators/data
     networks:
       - credit_risk_network
 
+  # -------------------------------------------------------------
+  # 3. FINANCIAL SERVICE (Port 8001) - 🔥 LE NOUVEAU SERVICE 🔥
+  # -------------------------------------------------------------
+  financial-service:
+    build:
+      context: ./financial-service
+      dockerfile: Dockerfile
+    container_name: financial_service
+    restart: on-failure
+    ports:
+      - "8001:8001"
+    depends_on:
+      - mongodb
+    environment:
+      - MONGO_URI=${MONGO_URI}
+      - MONGO_DB_NAME=${MONGO_DB_NAME}
+    networks:
+      - credit_risk_network
+
 # ==========================================
-# DÉCLARATION DES RESSOURCES GLOBALES (LA CORRECTION EST ICI)
+# DÉCLARATION DES RESSOURCES GLOBALES
 # ==========================================
 networks:
   credit_risk_network:
