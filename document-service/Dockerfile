@@ -18,5 +18,8 @@ RUN poetry config virtualenvs.create false \
 # 4. Copie du reste du code
 COPY . .
 
-# 5. Lancement de l'orchestrateur
-CMD ["python", "app/services/document_processor.py"]
+# 5. Lancement de l'API FastAPI (les routes de app/main.py, dont l'extraction
+# déclenchée par POST /analyze/{client_id} - pas le script de test autonome
+# de document_processor.py, qui relançait une extraction à chaque démarrage
+# du conteneur au lieu de servir l'API).
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

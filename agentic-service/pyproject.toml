@@ -2,7 +2,7 @@
 name = "agentic-service"
 version = "0.1.0"
 description = "Microservice agentique d'analyse financière"
-authors = ["Ton Nom <ton.email@example.com>"]
+authors = ["fatiiiima <fatima.bouhou@uit.ac.ma>"]
 readme = "README.md"
 packages = [{include = "app"}]
 
@@ -10,6 +10,15 @@ packages = [{include = "app"}]
 python = "^3.11"
 fastapi = "^0.111.0"
 uvicorn = {extras = ["standard"], version = "^0.30.0"}
+transformers = "^4.44.0"
+sentencepiece = "^0.2.0"
+torch = "^2.4.0"
+sentence-transformers = "^3.0.1"
+chromadb-client = "^1.5.9"
+httpx = "^0.28.1"
+langgraph = "^0.2.60"
+langchain-groq = "^0.2.1"
+python-dotenv = "^1.0.1"
 
 [build-system]
 requires = ["poetry-core"]

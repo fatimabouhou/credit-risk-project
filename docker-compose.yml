@@ -74,6 +74,20 @@ services:
     networks:
       - credit_risk_network
 
+  # -------------------------------------------------------------
+  # 4. CHROMA (Port 8010) - Vector store pour le RAG de agentic-service
+  # -------------------------------------------------------------
+  chroma:
+    image: chromadb/chroma:latest
+    container_name: credit_risk_chroma
+    restart: on-failure
+    ports:
+      - "8010:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    networks:
+      - credit_risk_network
+
 # ==========================================
 # DÉCLARATION DES RESSOURCES GLOBALES
 # ==========================================
@@ -83,3 +97,4 @@ networks:
 
 volumes:
   mongo_data:
+  chroma_data:

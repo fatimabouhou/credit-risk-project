@@ -72,6 +72,23 @@ def read_root():
     }
 
 
+@app.get("/client/{client_id}")
+def get_client_audit(client_id: str) -> Dict[str, Any]:
+    """
+    Récupère le dossier client déjà extrait et sauvegardé (profil
+    administratif, conformité, historique financier, comportement
+    bancaire) sans relancer l'extraction. Utilisé par agentic-service
+    pour lire le profil du client (secteur déclaré, raison sociale...).
+    """
+    audit = processor.db_service.get_client_audit(client_id)
+    if not audit:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Aucune donnée trouvée pour le client '{client_id}'. Le POST /analyze/{{client_id}} a-t-il déjà été exécuté ?"
+        )
+    return audit
+
+
 @app.post("/analyze/{client_id}")
 def analyze_client_folder(client_id: str, background_tasks: BackgroundTasks) -> Dict[str, Any]:
     """
