@@ -28,6 +28,10 @@ Le `asset_turnover`, rapproché du ROA (`02_rentabilite.md`), permet de décompo
 
 ## 3. Valeurs de référence par secteur [SIMULÉ] — DSO, DPO et DIO
 
+RATIO_BENCHMARK_TAG: `activite.dso_days`
+RATIO_BENCHMARK_TAG: `activite.dpo_days`
+RATIO_BENCHMARK_TAG: `activite.dio_days`
+
 | Secteur | DSO (Clients) moyen | DPO (Fournisseurs) moyen | DIO (Stocks) moyen |
 |---|---|---|---|
 | BTP | 80 à 120 jours | 60 à 90 jours | 30 à 60 jours |
@@ -40,6 +44,8 @@ Le `asset_turnover`, rapproché du ROA (`02_rentabilite.md`), permet de décompo
 ---
 
 ## 4. Valeurs de référence par secteur [SIMULÉ] — Asset Turnover
+
+RATIO_BENCHMARK_TAG: `activite.asset_turnover`
 
 | Secteur | Min acceptable | Moyenne | Max habituel |
 |---|---|---|---|

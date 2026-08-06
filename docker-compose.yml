@@ -88,6 +88,54 @@ services:
     networks:
       - credit_risk_network
 
+  # -------------------------------------------------------------
+  # 5. POSTGRES (Port 5432) - Persistance de l'état de l'agent
+  # (checkpointing LangGraph, agentic-service) - pas de données métier ici
+  # -------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: credit_risk_postgres
+    restart: on-failure
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - credit_risk_network
+
+  # -------------------------------------------------------------
+  # 6. AGENTIC SERVICE (Port 8002) - Financial Analysis Agent (RAG + LLM)
+  # -------------------------------------------------------------
+  agentic-service:
+    build:
+      context: ./agentic-service
+      dockerfile: Dockerfile
+    container_name: agentic_service
+    restart: on-failure
+    ports:
+      - "8002:8000"
+    depends_on:
+      - chroma
+      - postgres
+      - financial-service
+      - document-service
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - CHROMA_HOST=chroma
+      - CHROMA_PORT=8000
+      - POSTGRES_CHECKPOINT_URI=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - FINANCIAL_SERVICE_URL=http://financial-service:8001
+      - DOCUMENT_SERVICE_URL=http://document-service:8000
+      - LANGCHAIN_TRACING_V2=${LANGCHAIN_TRACING_V2}
+      - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY}
+      - LANGCHAIN_PROJECT=${LANGCHAIN_PROJECT}
+    networks:
+      - credit_risk_network
+
 # ==========================================
 # DÉCLARATION DES RESSOURCES GLOBALES
 # ==========================================
@@ -98,3 +146,4 @@ networks:
 volumes:
   mongo_data:
   chroma_data:
+  postgres_data:

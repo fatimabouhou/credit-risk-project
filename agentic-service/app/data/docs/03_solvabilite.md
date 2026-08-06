@@ -30,6 +30,8 @@ Le `net_current_liabilities_to_assets` recoupe le `working_capital_frf` de la fi
 
 ## 3. Valeurs de référence par secteur [SIMULÉ] — Debt to Equity (Levier)
 
+RATIO_BENCHMARK_TAG: `solvabilite.debt_to_equity_leverage`
+
 | Secteur | Min (faible levier) | Moyenne | Max acceptable | Seuil d'alerte |
 |---|---|---|---|---|
 | BTP | 0,60 | 1,30 | 2,00 | > 2,50 |
@@ -45,6 +47,8 @@ Le `net_current_liabilities_to_assets` recoupe le `working_capital_frf` de la fi
 
 ## 4. Valeurs de référence par taille [SIMULÉ] — Autonomie financière
 
+RATIO_BENCHMARK_TAG: `solvabilite.autonomie_financiere`
+
 | Taille | Seuil d'alerte (sous-capitalisation) | Min acceptable | Moyenne | Zone confortable |
 |---|---|---|---|---|
 | TPE | < 15% | 20% | 28% | > 35% |
@@ -55,7 +59,27 @@ Le `net_current_liabilities_to_assets` recoupe le `working_capital_frf` de la fi
 
 ---
 
-## 5. Repères uniques [SIMULÉ] — Structure court terme
+## 5. Valeurs de référence par secteur [SIMULÉ] — Endettement global (Debt Ratio)
+
+RATIO_BENCHMARK_TAG: `solvabilite.liabilities_to_assets`
+
+| Secteur | Min (faible endettement) | Moyenne | Max acceptable | Seuil d'alerte |
+|---|---|---|---|---|
+| BTP | 38% | 56% | 67% | > 71% |
+| Industrie (IND) | 33% | 52% | 64% | > 69% |
+| Commerce (COM) | 29% | 47% | 60% | > 67% |
+| Services (SRV) | 17% | 38% | 52% | > 60% |
+| Hébergement/restauration (HOT) | 44% | 62% | 71% | > 75% |
+| Transport (TRA) | 41% | 58% | 68% | > 72% |
+
+**Lecture** : ce ratio mesure la part de l'actif financée par l'endettement financier (`total_dettes` = dettes long terme + dettes court terme), à ne pas confondre avec `autonomie_financiere` : les deux ne somment pas exactement à 100% en pratique, l'écart correspondant aux passifs non financiers (fournisseurs, provisions...) exclus de `total_dettes` — voir la remarque de périmètre au § 1. Les mêmes facteurs sectoriels que pour le `debt_to_equity_leverage` (§ 3) expliquent le classement (BTP/hôtellerie/transport plus capitalistiques et tolérants, services plus prudents).
+
+---
+
+## 6. Repères uniques [SIMULÉ] — Structure court terme
+
+RATIO_BENCHMARK_TAG: `solvabilite.net_current_liabilities_to_assets`
+RATIO_BENCHMARK_TAG: `solvabilite.retained_earnings_to_current_liabilities`
 
 | Ratio | Repère | Interprétation |
 |---|---|---|
@@ -68,8 +92,8 @@ Le `net_current_liabilities_to_assets` recoupe le `working_capital_frf` de la fi
 
 ---
 
-## 6. Limites de cette fiche
+## 7. Limites de cette fiche
 
 - Ces intervalles sont des repères de plausibilité construits pour l'exercice, non calibrés sur des données réelles ni sur les covenants effectivement pratiqués par les banques marocaines.
-- Aucune distinction par taille n'est donnée pour le `debt_to_equity_leverage` et par secteur pour l'`autonomie_financiere` : dans cette simulation, un seul facteur (secteur ou taille) est jugé structurant par ratio, à l'image du choix fait dans `02_rentabilite.md`.
+- Aucune distinction par taille n'est donnée pour le `debt_to_equity_leverage` et le `liabilities_to_assets`, et par secteur pour l'`autonomie_financiere` : dans cette simulation, un seul facteur (secteur ou taille) est jugé structurant par ratio, à l'image du choix fait dans `02_rentabilite.md`.
 - Le `retained_earnings_to_current_liabilities` n'a pas de déclinaison sectorielle : sa lecture dépend surtout de l'âge de l'entreprise et de sa politique de distribution, deux facteurs non capturés par la segmentation secteur/taille de ce référentiel.

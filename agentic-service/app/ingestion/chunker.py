@@ -31,6 +31,7 @@ modèle d'embedding lui-même (plus léger, plus rapide).
 """
 
 import re
+import threading
 from pathlib import Path
 
 from transformers import AutoTokenizer
@@ -44,13 +45,22 @@ from ingestion.models import RawDocument, Chunk
 EMBEDDING_MODEL_NAME = "BAAI/bge-m3"
 
 _tokenizer = None
+_tokenizer_lock = threading.Lock()
 
 
 def get_tokenizer():
-    """Charge le tokenizer une seule fois (lazy loading, mis en cache)."""
+    """
+    Charge le tokenizer une seule fois (lazy loading, mis en cache).
+    Verrouillé par cohérence et sécurité avec embedder.py::get_model()
+    (même pattern de singleton paresseux, potentiellement appelé depuis
+    plusieurs threads par l'agent) — voir cette fonction pour le détail
+    du bug de concurrence que ce verrou évite.
+    """
     global _tokenizer
     if _tokenizer is None:
-        _tokenizer = AutoTokenizer.from_pretrained(EMBEDDING_MODEL_NAME)
+        with _tokenizer_lock:
+            if _tokenizer is None:
+                _tokenizer = AutoTokenizer.from_pretrained(EMBEDDING_MODEL_NAME)
     return _tokenizer
 
 

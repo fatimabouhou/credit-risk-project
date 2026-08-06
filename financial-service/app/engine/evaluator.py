@@ -4,6 +4,7 @@ import logging
 from .ratios import RatiosHub
 from .trends import TrendsEngine
 from .dscr import DSCREngine
+from .scoring import ScoringEngine
 
 logger = logging.getLogger("EvaluatorService")
 
@@ -66,12 +67,37 @@ class FinancialEvaluator:
         if "fonds_propres" not in data or data.get("fonds_propres") == 0:
             data["fonds_propres"] = data.get("capitaux_propres", 0.0)
 
+        # 4. Fonds de roulement (Working Capital) = Actif circulant - Passif circulant,
+        # même logique de repli que RatiosHub.calculate_all_ratios (dupliquée ici
+        # plutôt que réutilisée : ce module ne dépend pas de RatiosHub, et cette
+        # valeur est nécessaire avant l'appel à RatiosHub, pour le score Altman).
+        if "working_capital" not in data:
+            stocks = data.get("stocks", 0.0)
+            creances = data.get("creances_clients", 0.0)
+            treso_actif = data.get("tresorerie_actif", 0.0)
+            actif_circulant = data.get("actif_circulant") or (stocks + creances + treso_actif)
+            passif_circulant = data.get("passif_circulant") or data.get("dettes_court_terme", 0.0)
+            data["working_capital"] = actif_circulant - passif_circulant
+
         return data
 
     @classmethod
-    def evaluate_full_dossier(cls, mongo_document: Dict[str, Any]) -> Dict[str, Any]:
+    def evaluate_full_dossier(
+        cls,
+        mongo_document: Dict[str, Any],
+        is_listed: bool = False,
+        is_manufacturier: Optional[bool] = None,
+        market_value_equity: Optional[float] = None,
+    ) -> Dict[str, Any]:
         """
         Point d'entrée principal : prend tout le document MongoDB et génère le rapport complet.
+
+        `is_listed` / `is_manufacturier` / `market_value_equity` : voir
+        ScoringEngine.calculate_altman_z_score — aucune de ces données
+        n'existe dans le dossier client aujourd'hui, destinées à être
+        saisies par l'utilisateur via une future interface (voir
+        app/api/routes.py). Sans elles, le score Altman utilise
+        systématiquement la formule Z'' (1995), la plus générale.
         """
         client_id = mongo_document.get("client_id", "Inconnu")
         logger.info(f"⚡ Début de l'évaluation financière pour le dossier client : {client_id}")
@@ -110,7 +136,22 @@ class FinancialEvaluator:
             annuite_emprunts=mensualite_totale_annuelle
         )
 
-        # 7. Assemblage final
+        # 7. Score de défaillance Altman Z
+        # (dettes_totales / total_dettes garanti non-nul par _enrich_year_data)
+        altman_score = ScoringEngine.calculate_altman_z_score(
+            working_capital=data_2023.get("working_capital", 0.0),
+            total_assets=data_2023.get("total_actif", 0.0),
+            retained_earnings=data_2023.get("report_a_nouveau", 0.0),
+            ebit=data_2023.get("resultat_exploitation", 0.0),
+            book_value_equity=data_2023.get("capitaux_propres", 0.0),
+            total_liabilities=data_2023.get("total_dettes", 0.0),
+            sales=data_2023.get("chiffre_affaires", 0.0),
+            is_listed=is_listed,
+            is_manufacturier=is_manufacturier,
+            market_value_equity=market_value_equity,
+        )
+
+        # 8. Assemblage final
         evaluation_report = {
             "client_id": client_id,
             "statut_evaluation": "SUCCÈS",
@@ -118,6 +159,7 @@ class FinancialEvaluator:
             "ratios_financiers_n": ratios_2023,
             "analyse_tendances_3ans": tendances,
             "couverture_dette_dscr": dscr_analysis,
+            "altman_score": altman_score,
             "donnees_brutes_applaties": {
                 "2023": data_2023,
                 "2022": data_2022,

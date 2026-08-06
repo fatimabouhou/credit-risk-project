@@ -23,6 +23,7 @@ FIELDS = [
     "total_actif",
     "immobilisations",
     "capitaux_propres",
+    "report_a_nouveau",
     "dettes_financement",
     "dettes_court_terme",
     "tresorerie_actif",
@@ -185,6 +186,10 @@ class FinancialExtractor:
                         elif "total des capitaux propres (a)" in line_lower:
                             if data["capitaux_propres"] is None:
                                 data["capitaux_propres"] = self._make_entry(val_net, current_source, page_num)
+                        elif (
+                            "report à nouveau" in line_lower or "report a nouveau" in line_lower
+                        ) and data["report_a_nouveau"] is None:
+                            data["report_a_nouveau"] = self._make_entry(val_net, current_source, page_num)
                         elif re.search(r'total\s*i?\s*\(a\+b\+c\+d\+e\)', line_lower) and data["immobilisations"] is None:
                             data["immobilisations"] = self._make_entry(val_net, current_source, page_num)
                             stocks_pending = True

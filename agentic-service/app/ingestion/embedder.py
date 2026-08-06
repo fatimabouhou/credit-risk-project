@@ -28,6 +28,9 @@ persiste PAS les vecteurs (voir db/database_service.py) — il calcule
 seulement les embeddings.
 """
 
+import threading
+
+from langsmith import traceable
 from sentence_transformers import SentenceTransformer
 
 from ingestion.models import Chunk, EmbeddedChunk
@@ -37,16 +40,32 @@ from ingestion.models import Chunk, EmbeddedChunk
 EMBEDDING_MODEL_NAME = "BAAI/bge-m3"
 
 _model: SentenceTransformer | None = None
+_model_lock = threading.Lock()
 
 
 def get_model() -> SentenceTransformer:
-    """Charge le modèle d'embedding une seule fois (lazy loading, mis en cache)."""
+    """
+    Charge le modèle d'embedding une seule fois (lazy loading, mis en
+    cache). Verrouillé : rag_tool.py est appelé par plusieurs outils de
+    l'agent (graph/nodes.py), que LangGraph peut exécuter en parallèle
+    (plusieurs threads) quand le LLM demande plusieurs outils dans le
+    même tour. Sans verrou, deux threads peuvent passer le test
+    `_model is None` avant que l'un des deux ait fini de charger le
+    modèle, et lancer deux chargements PyTorch concurrents — cause
+    réelle observée d'un crash intermittent ("Cannot copy out of meta
+    tensor") en cours de session. Double-checked locking : le test
+    rapide sans verrou évite de payer le coût d'acquisition du Lock une
+    fois le modèle déjà chargé (l'écrasante majorité des appels).
+    """
     global _model
     if _model is None:
-        _model = SentenceTransformer(EMBEDDING_MODEL_NAME)
+        with _model_lock:
+            if _model is None:
+                _model = SentenceTransformer(EMBEDDING_MODEL_NAME)
     return _model
 
 
+@traceable(name="Embedding (bge-m3)", run_type="embedding")
 def embed_chunks(
     chunks: list[Chunk],
     batch_size: int = 16,

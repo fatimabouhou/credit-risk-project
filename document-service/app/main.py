@@ -44,8 +44,10 @@ async def initialize_database():
     'client_audits' dès que le microservice démarre dans Docker.
     """
     try:
-        # On accède au client MongoDB via l'instance du processor / repository
-        db = processor.repository.db
+        # On accède au client MongoDB via l'instance du processor (db_service,
+        # pas "repository" — attribut inexistant qui faisait échouer
+        # silencieusement cette initialisation, avalé par l'except ci-dessous)
+        db = processor.db_service.db
 
         # Vérification et création explicite de la collection
         collections = db.list_collection_names()

@@ -77,10 +77,26 @@ def persist_embedded_chunks(embedded_chunks: list[EmbeddedChunk]) -> None:
     )
 
 
-def query_similar(query_embedding: list[float], top_k: int = 5) -> chromadb.QueryResult:
-    """Retourne les top_k chunks les plus proches (cosinus) d'un vecteur de requête."""
+def query_similar(
+    query_embedding: list[float], top_k: int = 5, contains: str | None = None
+) -> chromadb.QueryResult:
+    """
+    Retourne les top_k chunks les plus proches (cosinus) d'un vecteur de
+    requête.
+
+    `contains` (optionnel) : recherche hybride — restreint D'ABORD aux
+    chunks dont le TEXTE contient exactement cette sous-chaîne (via
+    `where_document`, filtre exact sur le contenu, pas une comparaison de
+    vecteurs), puis classe ce sous-ensemble par similarité. Utilisé pour
+    ne jamais confondre deux ratios voisins dans la même fiche (ex.
+    current_ratio / quick_ratio) : la similarité seule ne suffisait pas à
+    les distinguer de façon fiable (voir tools/benchmark_tool.py).
+    """
     collection = get_collection()
-    return collection.query(query_embeddings=[query_embedding], n_results=top_k)
+    where_document = {"$contains": contains} if contains else None
+    return collection.query(
+        query_embeddings=[query_embedding], n_results=top_k, where_document=where_document
+    )
 
 
 if __name__ == "__main__":

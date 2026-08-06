@@ -32,6 +32,8 @@ Toutes les fiches de ratios donnent des seuils **par secteur** et/ou **par taill
 
 ## 3. Segmentation par taille [SIMULÉ]
 
+RATIO_BENCHMARK_TAG: segmentation.taille
+
 | Code | Taille | Chiffre d'affaires annuel | Total actif | Effectif |
 |---|---|---|---|---|
 | `TPE` | Très Petite Entreprise | < 10 000 000 MAD | < 8 000 000 MAD | < 10 salariés |

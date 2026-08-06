@@ -9,20 +9,32 @@ dans Chroma (ingestion/pipeline.py, db/database_service.py).
 Utilisé par le Financial Analysis Agent (et par benchmark_tool.py) pour
 aller chercher la norme sectorielle à laquelle comparer un ratio calculé.
 
-Fonction volontairement simple (pas encore décorée en tool LangChain/
-LangGraph) : graph/ n'existe pas encore. Le jour où l'agent est construit,
-ajouter le décorateur @tool autour de rag_search est un changement
-mécanique, pas une réécriture.
+Pas décorée en @tool LangChain : appelée en interne par outil_recherche_normes
+et benchmark_tool.py, jamais directement par le LLM. @traceable (langsmith)
+sert uniquement à faire apparaître cet appel comme un span "Retriever" dans
+LangSmith, nesté sous le tool LangChain qui l'appelle.
 """
+
+from langsmith import traceable
 
 from db.database_service import query_similar
 from ingestion.embedder import embed_chunks
 from ingestion.models import Chunk
 
 
-def rag_search(question: str, top_k: int = 3) -> list[dict]:
+@traceable(name="Retriever (ChromaDB)", run_type="retriever")
+def rag_search(question: str, top_k: int = 3, contains: str | None = None) -> list[dict]:
     """
     Retourne les top_k chunks les plus pertinents pour `question`.
+
+    `contains` (optionnel) : recherche hybride — restreint la recherche
+    aux chunks dont le texte contient exactement cette sous-chaîne (ex.
+    l'identifiant d'un ratio entre backticks, "liquidite.quick_ratio"),
+    avant de classer par similarité. À utiliser quand on cherche la norme
+    d'un ratio précis et identifiable par nom exact, pour ne jamais
+    confondre deux ratios voisins dans la même fiche (voir
+    tools/benchmark_tool.py). Sans `contains`, comportement inchangé
+    (similarité seule) — utile pour une question vraiment libre.
 
     Chaque résultat : chunk_id, source_file, section_title, text (le
     passage complet, en-tête de contexte inclus) et distance (cosinus,
@@ -40,7 +52,7 @@ def rag_search(question: str, top_k: int = 3) -> list[dict]:
         nature=None,
     )
     query_embedding = embed_chunks([query_chunk])[0].embedding
-    result = query_similar(query_embedding, top_k=top_k)
+    result = query_similar(query_embedding, top_k=top_k, contains=contains)
 
     if not result["ids"][0]:
         return []

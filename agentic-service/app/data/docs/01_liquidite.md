@@ -27,6 +27,8 @@ Le `working_capital_frf`, rapporté au total actif, correspond à l'opposé du `
 
 ## 3. Valeurs de référence par secteur [SIMULÉ] — Quick Ratio
 
+RATIO_BENCHMARK_TAG: `liquidite.quick_ratio`
+
 | Secteur | Min acceptable | Moyenne | Max habituel |
 |---|---|---|---|
 | BTP | 0,75 | 1,05 | 1,60 |
@@ -42,6 +44,8 @@ Le `working_capital_frf`, rapporté au total actif, correspond à l'opposé du `
 
 ## 4. Valeurs de référence par taille [SIMULÉ] — Current Ratio
 
+RATIO_BENCHMARK_TAG: `liquidite.current_ratio`
+
 | Taille | Min acceptable | Moyenne | Max habituel |
 |---|---|---|---|
 | TPE | 1,00 | 1,30 | 1,90 |
@@ -54,6 +58,8 @@ Le `working_capital_frf`, rapporté au total actif, correspond à l'opposé du `
 
 ## 5. Cash Ratio — repère unique [SIMULÉ]
 
+RATIO_BENCHMARK_TAG: `liquidite.cash_ratio`
+
 | Repère | Valeur |
 |---|---|
 | Seuil d'alerte (trésorerie très tendue) | < 0,10 |
@@ -65,6 +71,8 @@ Le `working_capital_frf`, rapporté au total actif, correspond à l'opposé du `
 ---
 
 ## 6. Limites de cette fiche
+
+RATIO_BENCHMARK_TAG: `liquidite.working_capital_frf`
 
 - Ces intervalles sont des repères de plausibilité construits pour l'exercice, non calibrés sur des données réelles.
 - Le `working_capital_frf` n'a volontairement pas de valeur de référence chiffrée : c'est un montant absolu, non comparable entre entreprises de tailles différentes sans le rapporter au chiffre d'affaires ou au total actif.

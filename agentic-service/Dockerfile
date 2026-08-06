@@ -1,5 +1,10 @@
 # --- Image de base ---
-FROM python:3.11-slim
+# bookworm (Debian stable) plutôt que le tag flottant "slim" (résolu vers
+# trixie/testing au moment où ce Dockerfile a été écrit) : le dépôt de
+# testing change sous les pieds pendant un build (paquets remplacés entre
+# le apt-get update et le fetch réel), d'où des 403/hash mismatch récurrents
+# et non reproductibles avec l'image flottante.
+FROM python:3.11-slim-bookworm
 
 # Dépendances système nécessaires à sentencepiece / torch (compilation)
 RUN apt-get update && apt-get install -y --no-install-recommends \

@@ -26,6 +26,8 @@ La marge opérationnelle isole la performance du métier, indépendamment de la 
 
 ## 3. Valeurs de référence par secteur [SIMULÉ] — Marge opérationnelle
 
+RATIO_BENCHMARK_TAG: `rentabilite.marge_operationnelle`
+
 | Secteur | Min acceptable | Moyenne | Max habituel |
 |---|---|---|---|
 | BTP | 4% | 9% | 16% |
@@ -41,6 +43,8 @@ La marge opérationnelle isole la performance du métier, indépendamment de la 
 
 ## 4. Valeurs de référence par secteur [SIMULÉ] — ROA
 
+RATIO_BENCHMARK_TAG: `rentabilite.roa_return_on_assets`
+
 | Secteur | Min acceptable | Moyenne | Max habituel |
 |---|---|---|---|
 | BTP | 1,5% | 4% | 8% |
@@ -54,6 +58,8 @@ La marge opérationnelle isole la performance du métier, indépendamment de la 
 
 ## 5. Valeurs de référence par taille [SIMULÉ] — ROE
 
+RATIO_BENCHMARK_TAG: `rentabilite.roe_return_on_equity`
+
 | Taille | Min acceptable | Moyenne | Max habituel |
 |---|---|---|---|
 | TPE | 5% | 12% | 22% |
@@ -64,7 +70,41 @@ La marge opérationnelle isole la performance du métier, indépendamment de la 
 
 ---
 
-## 6. Écart marge nette / marge opérationnelle — repère de lecture
+## 6. Valeurs de référence par secteur [SIMULÉ] — Marge nette
+
+RATIO_BENCHMARK_TAG: `rentabilite.marge_nette`
+
+| Secteur | Min acceptable | Moyenne | Max habituel |
+|---|---|---|---|
+| BTP | 2,5% | 6% | 11% |
+| Industrie (IND) | 3% | 7% | 13% |
+| Commerce (COM) | 1% | 4% | 8% |
+| Services (SRV) | 5% | 11% | 19% |
+| Hébergement/restauration (HOT) | 1,5% | 6% | 14% |
+| Transport (TRA) | 2,5% | 5,5% | 10% |
+
+**Lecture** : la marge nette est structurellement inférieure à la marge opérationnelle du même secteur (charges d'intérêt, impôt sur les sociétés) — voir le repère de lecture § 8 pour interpréter l'écart entre les deux.
+
+---
+
+## 7. Valeurs de référence par secteur [SIMULÉ] — EBITDA Margin
+
+RATIO_BENCHMARK_TAG: `rentabilite.ebitda_margin`
+
+| Secteur | Min acceptable | Moyenne | Max habituel |
+|---|---|---|---|
+| BTP | 7% | 13% | 22% |
+| Industrie (IND) | 8% | 15% | 26% |
+| Commerce (COM) | 3% | 8% | 15% |
+| Services (SRV) | 10% | 19% | 32% |
+| Hébergement/restauration (HOT) | 7% | 16% | 30% |
+| Transport (TRA) | 7% | 12% | 20% |
+
+**Lecture** : l'EBITDA margin est structurellement supérieur à la marge opérationnelle du même secteur (les amortissements sont exclus) — l'écart est le plus marqué dans les secteurs capitalistiques (hôtellerie, industrie, BTP), le plus faible dans le commerce et les services.
+
+---
+
+## 8. Écart marge nette / marge opérationnelle — repère de lecture
 
 | Situation | Interprétation |
 |---|---|
@@ -74,7 +114,7 @@ La marge opérationnelle isole la performance du métier, indépendamment de la 
 
 ---
 
-## 7. Limites de cette fiche
+## 9. Limites de cette fiche
 
 - Ces intervalles sont des repères de plausibilité pour l'exercice, non calibrés sur des données réelles.
-- Aucune distinction par taille n'est donnée pour la marge opérationnelle et le ROA : dans cette simulation, seul le facteur sectoriel est jugé structurant pour ces deux ratios.
+- Aucune distinction par taille n'est donnée pour la marge opérationnelle, le ROA, la marge nette et l'EBITDA margin : dans cette simulation, seul le facteur sectoriel est jugé structurant pour ces ratios.
