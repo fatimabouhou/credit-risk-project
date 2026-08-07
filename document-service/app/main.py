@@ -2,6 +2,7 @@ import os
 import sys
 import logging
 from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, Any
 
@@ -28,6 +29,16 @@ app = FastAPI(
     title="Document Processing Microservice",
     description="Microservice d'extraction de PDF financiers et d'audit pour le risque crédit",
     version="1.0.0"
+)
+
+# Le frontend (React, dev server Vite) appelle cette API directement
+# depuis le navigateur (déclenchement de l'extraction d'un dossier) —
+# voir agentic-service/app/main.py pour le même besoin.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Instanciation unique de l'orchestrateur au démarrage du service

@@ -1,0 +1,209 @@
+.landing {
+  min-height: 100vh;
+  background: radial-gradient(90% 60% at 50% 0%, var(--bg-raised) 0%, var(--bg-base) 60%);
+}
+
+.landing__main {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 72px 24px 60px;
+}
+
+.landing__intro {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.landing__title {
+  font-family: var(--font-sans);
+  font-size: clamp(32px, 5vw, 44px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  margin-bottom: 14px;
+}
+
+.landing__subtitle {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.landing__card {
+  background: var(--bg-raised);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 20px;
+  padding: 36px;
+}
+
+.landing__label {
+  display: block;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.landing__input {
+  width: 100%;
+  padding: 16px 18px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 17px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.landing__input:focus {
+  border-color: var(--brand);
+}
+
+.landing__input:disabled {
+  opacity: 0.6;
+}
+
+.landing__error {
+  margin-top: 14px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: var(--brand-tint-08);
+  border: 1px solid var(--brand-tint-35);
+  color: #ff8a96;
+  font-family: var(--font-sans);
+  font-size: 14px;
+}
+
+.landing__submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 20px;
+  padding: 17px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, var(--brand), var(--brand-dark));
+  color: #fff;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.2s ease, transform 0.15s ease;
+}
+
+.landing__submit:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.landing__submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.landing__steps {
+  list-style: none;
+  margin: 24px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.landing__step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--text-faint);
+  transition: color 0.3s ease;
+}
+
+.landing__step--active {
+  color: var(--text-primary);
+}
+
+.landing__step-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-faint);
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+  flex-shrink: 0;
+}
+
+.landing__step--active .landing__step-dot {
+  background: var(--brand);
+  box-shadow: 0 0 8px var(--brand-tint-35);
+}
+
+.landing__divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.07);
+  margin: 28px 0 24px;
+}
+
+.landing__extract {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.landing__extract-title {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.landing__extract-help {
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  color: var(--text-faint);
+  line-height: 1.5;
+}
+
+.landing__extract-btn {
+  flex-shrink: 0;
+  padding: 11px 18px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.landing__extract-btn:hover:not(:disabled) {
+  border-color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.landing__extract-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.landing__extract-message {
+  margin-top: 16px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: #34d399;
+}
+
+.landing__extract-message--error {
+  color: #ff8a96;
+}

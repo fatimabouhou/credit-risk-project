@@ -14,6 +14,7 @@ from pathlib import Path
 from tools.patterns.context_builder import build_pattern_context
 from tools.patterns.engine import evaluate_all_patterns
 from tools.patterns.parser import parse_pattern_directory
+from tools.patterns.vocabulary import RATIO_NAME_MAP
 
 _PATTERNS_DIR = Path(__file__).resolve().parents[2] / "data" / "patterns"
 _ALL_PATTERNS = parse_pattern_directory(_PATTERNS_DIR)
@@ -61,6 +62,35 @@ def _check_altman_coherence(altman_score: dict | None, fired: list) -> dict | No
         "altman_zone": zone,
         "divergence": divergence,
     }
+
+
+def ratios_couverts(pattern_ids: list[str]) -> set[str]:
+    """
+    Noms de ratios INTERNES (ex. "liquidite.current_ratio", même
+    vocabulaire que "ratio_name" dans anomalies_detectees, voir
+    benchmark_tool.py) couverts par les conditions "required" des
+    patterns donnés (identifiants comme dans "patterns_declenches",
+    fusions "X / Y" gérées).
+
+    Utilisé par graph/decision.py pour ne pas compter deux fois le même
+    signal sous-jacent dans compute_risk_score : une anomalie et le
+    pattern qui en dérive tous les deux, séparément, alors qu'ils
+    décrivent le même problème (voir planner.py point 6d, même règle
+    déjà appliquée à la conclusion texte, appliquée ici au score).
+    """
+    by_id = {p.id: p for p in _ALL_PATTERNS}
+    covered: set[str] = set()
+    for pattern_id in pattern_ids:
+        for single_id in pattern_id.split(" / "):
+            pattern = by_id.get(single_id.strip())
+            if not pattern:
+                continue
+            for condition in pattern.required:
+                for display_name in condition.ratios:
+                    internal_name = RATIO_NAME_MAP.get(display_name)
+                    if internal_name and not internal_name.startswith("TREND:"):
+                        covered.add(internal_name)
+    return covered
 
 
 def check_client_patterns(

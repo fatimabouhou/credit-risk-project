@@ -1,0 +1,77 @@
+.ratio-table__empty {
+  font-family: var(--font-sans);
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.ratio-table__group {
+  margin-bottom: 28px;
+}
+
+.ratio-table__group:last-child {
+  margin-bottom: 0;
+}
+
+.ratio-table__group-title {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--brand-light);
+  margin-bottom: 12px;
+}
+
+.ratio-table__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-sans);
+}
+
+.ratio-table__table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  padding: 0 12px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ratio-table__table td {
+  padding: 12px;
+  font-size: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: var(--text-primary);
+}
+
+.ratio-table__table tr:last-child td {
+  border-bottom: none;
+}
+
+.ratio-table__name {
+  font-weight: 600;
+}
+
+.ratio-table__value {
+  font-family: "SFMono-Regular", "Consolas", monospace;
+  font-weight: 600;
+}
+
+.ratio-table__ref {
+  color: var(--text-faint);
+  font-size: 12px;
+}
+
+.ratio-table__no-verdict {
+  color: var(--text-faint);
+  font-size: 12px;
+  font-style: italic;
+}
+
+@media (max-width: 640px) {
+  .ratio-table__ref {
+    display: none;
+  }
+}

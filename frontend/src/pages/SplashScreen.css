@@ -1,0 +1,274 @@
+.splash {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: radial-gradient(120% 120% at 50% 0%, var(--bg-raised) 0%, #070a12 55%, var(--bg-base) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+  transition: opacity 0.42s ease, transform 0.42s ease;
+}
+
+.splash--ready {
+  cursor: pointer;
+}
+
+.splash--leaving {
+  opacity: 0;
+  transform: scale(1.03);
+}
+
+.splash-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.splash-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(60% 55% at 50% 45%, transparent 0%, rgba(5, 7, 16, 0.55) 70%, var(--bg-base) 100%);
+  pointer-events: none;
+}
+
+.splash-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 0 24px;
+}
+
+/* --- Logo --- */
+
+.splash-mark {
+  position: relative;
+  width: 152px;
+  height: 152px;
+  margin-bottom: 40px;
+}
+
+.splash-mark__svg {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.splash-mark__hex {
+  fill: var(--brand-tint-08);
+  stroke: var(--brand);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-dasharray: 340;
+  stroke-dashoffset: 340;
+  animation: drawHex 1.7s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+  filter: drop-shadow(0 0 8px var(--brand-tint-35));
+}
+
+.splash-mark__check {
+  fill: none;
+  stroke: var(--brand-light);
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 80;
+  stroke-dashoffset: 80;
+  animation: drawCheck 0.7s ease-out 1.35s forwards;
+}
+
+.splash-mark__glow {
+  position: absolute;
+  inset: -30%;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--brand-tint-35) 0%, transparent 68%);
+  opacity: 0;
+  animation: markGlow 3.4s ease-in-out 1.8s infinite;
+}
+
+@keyframes drawHex {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes drawCheck {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes markGlow {
+  0%, 100% {
+    opacity: 0.25;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(1.06);
+  }
+}
+
+/* --- Texte --- */
+
+.splash-title {
+  font-family: var(--font-sans);
+  font-size: clamp(40px, 7vw, 76px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.08;
+  color: var(--text-primary);
+  margin: 0 0 22px;
+}
+
+.splash-title span {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(14px);
+  animation: wordIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.splash-title span:nth-child(1) { animation-delay: 1.55s; }
+.splash-title span:nth-child(2) { animation-delay: 1.68s; }
+.splash-title span:nth-child(3) { animation-delay: 1.81s; }
+
+.splash-title__accent {
+  color: var(--brand);
+}
+
+@keyframes wordIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.splash-tagline {
+  font-family: var(--font-sans);
+  font-size: clamp(19px, 2.2vw, 25px);
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--text-muted);
+  max-width: 640px;
+  margin: 0 0 52px;
+  opacity: 0;
+  animation: fadeIn 0.8s ease-out 2.1s forwards;
+}
+
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
+
+/* --- Ticker --- */
+
+.splash-ticker {
+  height: 32px;
+  margin-bottom: 52px;
+  font-family: "SFMono-Regular", "Consolas", monospace;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--brand-light);
+  opacity: 0;
+  animation: fadeIn 0.6s ease-out 2.3s forwards;
+}
+
+.splash-ticker__value {
+  display: inline-block;
+  animation: tickerCycle 1.1s ease-in-out;
+}
+
+@keyframes tickerCycle {
+  0% { opacity: 0; transform: translateY(4px); }
+  15% { opacity: 1; transform: translateY(0); }
+  85% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-4px); }
+}
+
+/* --- Progress --- */
+
+.splash-progress {
+  width: 240px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 48px;
+}
+
+.splash-progress__bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--brand), var(--brand-light));
+  animation: progressFill 2.5s cubic-bezier(0.4, 0, 0.2, 1) 0.1s forwards;
+}
+
+@keyframes progressFill {
+  to { width: 100%; }
+}
+
+/* --- CTA --- */
+
+.splash-enter {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 21px 42px;
+  border-radius: 999px;
+  border: 1.5px solid var(--brand-tint-35);
+  background: var(--brand-tint-08);
+  color: #ffdde1;
+  font-family: var(--font-sans);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition: background 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
+}
+
+.splash-enter--visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+  transition: opacity 0.5s ease, transform 0.5s ease, background 0.25s ease, border-color 0.25s ease;
+}
+
+.splash-enter:hover {
+  background: var(--brand-tint-15);
+  border-color: var(--brand);
+}
+
+.splash-enter__arrow {
+  transition: transform 0.25s ease;
+}
+
+.splash-enter:hover .splash-enter__arrow {
+  transform: translateX(3px);
+}
+
+.splash-brand {
+  margin-top: 40px;
+  text-align: center;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  opacity: 0;
+  animation: fadeIn 1s ease-out 2.6s forwards;
+}
+
+@media (max-width: 480px) {
+  .splash-mark { width: 110px; height: 110px; }
+  .splash-tagline { font-size: 15px; }
+}

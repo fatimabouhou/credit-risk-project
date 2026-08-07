@@ -17,7 +17,7 @@ from langchain_core.messages import HumanMessage, ToolMessage
 
 from db.history import list_analysis_history
 from graph.decision import decide_credit
-from graph.workflow import build_workflow
+from graph.workflow import MAX_TOOL_ERRORS, build_workflow
 
 logger = logging.getLogger("AgenticAPI")
 router = APIRouter()
@@ -99,6 +99,61 @@ def _extract_altman_score(messages: list) -> dict | None:
             except (json.JSONDecodeError, TypeError):
                 return None
             return data.get("altman_score")
+    return None
+
+
+def _extract_dscr(messages: list) -> dict | None:
+    """
+    "couverture_dette_dscr" ("dscr"/"is_dscr_acceptable") fait partie du
+    payload de outil_rapport_financier, TOUJOURS appelé (pas optionnel
+    comme outil_tendances/outil_validation_dossier) — donc disponible dès
+    que l'analyse a pu aller au bout.
+    """
+    for message in reversed(messages):
+        if isinstance(message, ToolMessage) and message.name == "outil_rapport_financier":
+            try:
+                data = json.loads(message.content)
+            except (json.JSONDecodeError, TypeError):
+                return None
+            return data.get("couverture_dette_dscr")
+    return None
+
+
+def _extract_tendances(messages: list) -> dict | None:
+    """
+    "tendances" (outil_tendances) : OPTIONNEL, l'agent 1 ne l'appelle que
+    s'il juge que la trajectoire sur 3 exercices apporte quelque chose à
+    CE dossier. None si jamais appelé — pas une erreur, juste un signal
+    absent (compute_risk_score le traite comme neutre, voir decision.py).
+    """
+    for message in reversed(messages):
+        if isinstance(message, ToolMessage) and message.name == "outil_tendances":
+            try:
+                data = json.loads(message.content)
+            except (json.JSONDecodeError, TypeError):
+                return None
+            return data.get("tendances")
+    return None
+
+
+def _extract_validation(messages: list) -> dict | None:
+    """
+    "alertes_coherence" (ex. incident de paiement détecté à la Centrale
+    des Risques BAM) et "conformite_reglementaire" (attestations DGI/
+    CNSS) — outil_validation_dossier, OPTIONNEL comme outil_tendances :
+    None si jamais appelé (l'agent 1 ne le juge pertinent que s'il a un
+    doute sur la fiabilité du dossier).
+    """
+    for message in reversed(messages):
+        if isinstance(message, ToolMessage) and message.name == "outil_validation_dossier":
+            try:
+                data = json.loads(message.content)
+            except (json.JSONDecodeError, TypeError):
+                return None
+            return {
+                "alertes_coherence": data.get("alertes_coherence", []),
+                "conformite_reglementaire": data.get("conformite_reglementaire", {}),
+            }
     return None
 
 
@@ -229,36 +284,56 @@ def analyze_client(client_id: str, taille: str | None = None):
     benchmark = _extract_benchmark(final_state["messages"])
     patterns = _extract_patterns(final_state["messages"])
     altman_score = _extract_altman_score(final_state["messages"])
+    dscr = _extract_dscr(final_state["messages"])
+    tendances = _extract_tendances(final_state["messages"])
+    validation = _extract_validation(final_state["messages"])
     conclusion = _inject_altman_sentence(conclusion, altman_score, patterns["coherence_altman"])
 
     secteur = benchmark["secteur"] if benchmark else None
     taille = benchmark["taille"] if benchmark else None
     anomalies = benchmark["anomalies"] if benchmark else []
+    tool_error_count = final_state.get("tool_error_count", 0)
 
-    try:
-        decision = decide_credit(
-            {
-                "secteur": secteur,
-                "taille": taille,
-                "anomalies": anomalies,
-                "patterns": patterns["patterns"],
-                "altman_score": altman_score,
-                "coherence_altman": patterns["coherence_altman"],
-                "conclusion": conclusion,
-            }
-        )
-    except Exception as e:
-        # Le 2ème agent (OpenRouter, quota/provider séparé de l'agent 1) reste
-        # optionnel pour la réponse : une panne ne doit pas invalider le
-        # diagnostic déjà produit par l'agent 1, qui est le plus coûteux à
-        # obtenir (voir graph/decision.py).
-        logger.error(f"❌ Erreur lors de la décision de crédit du client '{client_id}' : {e}")
-        decision = {"decision": None, "justification": None, "erreur": str(e)}
+    if tool_error_count >= MAX_TOOL_ERRORS:
+        # L'agent 1 a échoué à collecter les données (voir echec_node,
+        # workflow.py) : compute_risk_score() sur un diagnostic vide
+        # renverrait "accord" (score 0, aucun signal) — un faux négatif
+        # dangereux qui confondrait "aucune donnée" avec "aucun risque".
+        # L'agent 2 ne doit même pas être appelé dans ce cas.
+        decision = {
+            "decision": None,
+            "justification": None,
+            "erreur": "Analyse interrompue : données insuffisantes pour évaluer le risque de crédit.",
+        }
+    else:
+        try:
+            decision = decide_credit(
+                {
+                    "dscr": dscr,
+                    "tendances": tendances,
+                    "alertes_coherence": validation["alertes_coherence"] if validation else [],
+                    "conformite_reglementaire": validation["conformite_reglementaire"] if validation else {},
+                    "secteur": secteur,
+                    "taille": taille,
+                    "anomalies": anomalies,
+                    "patterns": patterns["patterns"],
+                    "altman_score": altman_score,
+                    "coherence_altman": patterns["coherence_altman"],
+                    "conclusion": conclusion,
+                }
+            )
+        except Exception as e:
+            # Le 2ème agent (OpenRouter, quota/provider séparé de l'agent 1) reste
+            # optionnel pour la réponse : une panne ne doit pas invalider le
+            # diagnostic déjà produit par l'agent 1, qui est le plus coûteux à
+            # obtenir (voir graph/decision.py).
+            logger.error(f"❌ Erreur lors de la décision de crédit du client '{client_id}' : {e}")
+            decision = {"decision": None, "justification": None, "erreur": str(e)}
 
     return {
         "client_id": client_id,
         "thread_id": thread_id,
-        "tool_error_count": final_state.get("tool_error_count", 0),
+        "tool_error_count": tool_error_count,
         "secteur": secteur,
         "taille": taille,
         "taille_source": benchmark["taille_source"] if benchmark else None,
@@ -268,11 +343,46 @@ def analyze_client(client_id: str, taille: str | None = None):
         "patterns": patterns["patterns"],
         "altman_score": altman_score,
         "coherence_altman": patterns["coherence_altman"],
+        "dscr": dscr,
+        "tendances": tendances,
+        "conformite_reglementaire": validation["conformite_reglementaire"] if validation else {},
+        "alertes_coherence": validation["alertes_coherence"] if validation else [],
         "ratios_non_comparables": benchmark["ratios_non_comparables"] if benchmark else [],
         "champs_manquants": benchmark["champs_manquants"] if benchmark else [],
         "conclusion": conclusion,
         "decision": decision,
     }
+
+
+@router.post("/decision/test", status_code=status.HTTP_200_OK)
+def test_decision_agent(diagnostic: dict):
+    """
+    Fait tourner UNIQUEMENT l'agent 2 (decide_credit, voir graph/decision.py)
+    sur un diagnostic fourni directement dans le body — sans passer par
+    l'agent 1 (donc sans appel Groq, sans consommer son quota). Pensé pour
+    tester la grille de points et le style de justification indépendamment
+    d'une analyse complète.
+
+    Body attendu (tous les champs optionnels, absents = neutres) :
+    {
+      "patterns": [{"id": "...", "niveau_risque": "élevé|modéré|faible"}],
+      "anomalies": [{"ratio_name": "...", "severite": "elevee|a_surveiller"}],
+      "altman_score": {"zone": "safe|grey|distress"},
+      "dscr": {"is_dscr_acceptable": true|false},
+      "tendances": {"resultat_net": {"tendance_recente": "Hausse|Baisse"}, ...},
+      "conformite_reglementaire": {"attestations_legales": [{"source": "...", "is_compliant": true|false}]},
+      "alertes_coherence": ["..."],
+      "secteur": "...", "taille": "...", "conclusion": "..."
+    }
+    """
+    try:
+        return decide_credit(diagnostic)
+    except Exception as e:
+        logger.error(f"❌ Erreur lors du test de l'agent de décision : {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erreur interne lors du test de l'agent de décision : {e}",
+        )
 
 
 @router.get("/history/{client_id}", status_code=status.HTTP_200_OK)

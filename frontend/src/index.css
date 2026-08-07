@@ -1,0 +1,44 @@
+:root {
+  /* Charte Devoteam : rouge corail de marque, pas d'orange générique. */
+  --brand: #eb3349;
+  --brand-light: #ff6b7a;
+  --brand-dark: #b91f34;
+  --brand-tint-08: rgba(235, 51, 73, 0.08);
+  --brand-tint-15: rgba(235, 51, 73, 0.15);
+  --brand-tint-35: rgba(235, 51, 73, 0.35);
+
+  --bg-base: #05070f;
+  --bg-raised: #0d1220;
+  --text-primary: #f5f7fa;
+  --text-muted: #94a3b8;
+  --text-faint: #4b5768;
+
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100vh;
+}
+
+body {
+  font: 16px/1.5 var(--font-sans);
+  color-scheme: dark;
+  background: var(--bg-base);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, p {
+  margin: 0;
+}
+
+button {
+  font: inherit;
+}

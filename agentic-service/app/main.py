@@ -9,6 +9,7 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from api import routes as agentic_routes
 from db.checkpointer import get_postgres_checkpointer
@@ -32,6 +33,17 @@ app = FastAPI(
     description="Microservice agentique d'analyse financière (RAG + agent autonome)",
     version="1.0.0",
     lifespan=lifespan,
+)
+
+
+# Le frontend (React, dev server Vite) appelle cette API directement
+# depuis le navigateur — sans ça, chaque requête serait bloquée par la
+# same-origin policy avant même d'atteindre les routes ci-dessous.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(agentic_routes.router, prefix="/api/v1/agentic", tags=["Analyse"])
