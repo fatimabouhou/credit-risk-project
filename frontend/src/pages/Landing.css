@@ -48,6 +48,11 @@
   margin-bottom: 10px;
 }
 
+.landing__input::placeholder {
+  color: var(--text-faint);
+  opacity: 1;
+}
+
 .landing__input {
   width: 100%;
   padding: 16px 18px;

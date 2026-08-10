@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import TopNav from "../components/TopNav";
 import { analyzeClient, extractDossier } from "../api/client";
 import "./Landing.css";
@@ -13,7 +13,8 @@ const STEPS = [
 
 export default function Landing() {
   const navigate = useNavigate();
-  const [clientId, setClientId] = useState("");
+  const [searchParams] = useSearchParams();
+  const [clientId, setClientId] = useState(searchParams.get("client") || "");
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(0);
   const [error, setError] = useState(null);
