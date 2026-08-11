@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Rapport de crédit — {{ client_id }}</title>
+<style>
+    @page {
+        size: A4;
+        margin: 2cm 1.8cm;
+        @bottom-center {
+            content: "Rapport généré automatiquement — page " counter(page) " / " counter(pages);
+            font-size: 8pt;
+            color: #888888;
+        }
+    }
+    body {
+        font-family: "Helvetica Neue", Arial, sans-serif;
+        color: #1f2933;
+        font-size: 10.5pt;
+        line-height: 1.5;
+    }
+    .report-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 3px solid #10243e;
+        padding-bottom: 0.6em;
+        margin-bottom: 1.2em;
+    }
+    .report-header img {
+        height: 34px;
+        width: auto;
+    }
+    h1 {
+        font-size: 18pt;
+        margin: 0 0 0.1em 0;
+        color: #10243e;
+        text-align: right;
+    }
+    .subtitle {
+        color: #52606d;
+        font-size: 10pt;
+        text-align: right;
+    }
+    h2 {
+        font-size: 13pt;
+        color: #10243e;
+        border-bottom: 2px solid #10243e;
+        padding-bottom: 0.2em;
+        margin-top: 1.8em;
+        margin-bottom: 0.8em;
+    }
+    h3 {
+        font-size: 11pt;
+        color: #334e68;
+        margin-bottom: 0.4em;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 1em;
+        font-size: 9.5pt;
+    }
+    th, td {
+        text-align: left;
+        padding: 5px 8px;
+        border-bottom: 1px solid #d9e2ec;
+    }
+    th {
+        background-color: #f0f4f8;
+        color: #334e68;
+        font-weight: 600;
+    }
+    .label {
+        color: #52606d;
+        font-weight: 600;
+    }
+    .kv-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.3em 1.5em;
+        margin-bottom: 1em;
+    }
+    .kv-grid div span.label { display: block; }
+    .badge {
+        display: inline-block;
+        padding: 4px 14px;
+        border-radius: 4px;
+        font-weight: 700;
+        font-size: 11pt;
+        color: #ffffff;
+    }
+    .badge-accord { background-color: #1a7f4e; }
+    .badge-a_surveiller { background-color: #b7791f; }
+    .badge-refus { background-color: #b91c1c; }
+    .badge-inconnu { background-color: #7b8794; }
+    .verdict-severe { color: #b91c1c; font-weight: 600; }
+    .verdict-attention { color: #b7791f; font-weight: 600; }
+    .verdict-ok { color: #1a7f4e; }
+    .conclusion-box, .justification-box {
+        background-color: #f8fafc;
+        border-left: 4px solid #10243e;
+        padding: 0.8em 1em;
+        white-space: pre-line;
+    }
+    .empty {
+        color: #9aa5b1;
+        font-style: italic;
+    }
+    .pattern-item {
+        margin-bottom: 0.6em;
+        padding-bottom: 0.6em;
+        border-bottom: 1px solid #eef2f6;
+    }
+    .pattern-niveau-élevé { color: #b91c1c; font-weight: 600; }
+    .pattern-niveau-modéré { color: #b7791f; font-weight: 600; }
+    .pattern-niveau-faible { color: #52606d; }
+</style>
+</head>
+<body>
+
+<div class="report-header">
+    {% if logo_data_uri %}
+    <img src="{{ logo_data_uri }}" alt="Logo">
+    {% else %}
+    <div></div>
+    {% endif %}
+    <div>
+        <h1>Rapport de crédit</h1>
+        <div class="subtitle">Client : <strong>{{ client_id }}</strong> — Généré le {{ date_generation }}</div>
+    </div>
+</div>
+
+<!-- ============================== SECTION 1 : EXTRACTION ============================== -->
+<h2>1. Profil du dossier (extraction documentaire)</h2>
+
+<div class="kv-grid">
+    <div><span class="label">Raison sociale</span>{{ extraction.raison_sociale or "N/A" }}</div>
+    <div><span class="label">Secteur déclaré</span>{{ extraction.secteur_declare or "N/A" }}</div>
+    <div><span class="label">Capital social</span>{{ extraction.capital_social or "N/A" }}</div>
+    <div><span class="label">Date de création</span>{{ extraction.date_creation or "N/A" }}</div>
+    <div><span class="label">Montant demandé</span>{{ extraction.montant_demande or "N/A" }}</div>
+    <div><span class="label">Durée du crédit</span>{{ extraction.duree_demande or "N/A" }}</div>
+    <div><span class="label">Objet du financement</span>{{ extraction.objet_demande or "N/A" }}</div>
+</div>
+
+<h3>Conformité réglementaire (attestations)</h3>
+{% if extraction.attestations %}
+<table>
+    <tr><th>Source</th><th>Statut</th></tr>
+    {% for a in extraction.attestations %}
+    <tr>
+        <td>{{ a.source or "N/A" }}</td>
+        <td class="{{ 'verdict-severe' if a.is_compliant is sameas false else 'verdict-ok' }}">
+            {{ a.statut_texte or "N/A" }}
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<p class="empty">Aucune attestation de conformité extraite.</p>
+{% endif %}
+
+<h3>Centrale des risques (Bank Al-Maghrib)</h3>
+<div class="kv-grid">
+    <div><span class="label">Taux d'utilisation des lignes</span>
+        {{ extraction.centrale_risques.taux_utilisation ~ " %" if extraction.centrale_risques.taux_utilisation is not none else "N/A" }}
+    </div>
+    <div><span class="label">Incidents de paiement</span>{{ extraction.centrale_risques.statut_incidents or "N/A" }}</div>
+</div>
+
+<h3>Dette existante</h3>
+<div class="kv-grid">
+    <div><span class="label">Mensualité totale</span>{{ extraction.dette_existante.mensualite_totale ~ " DH" if extraction.dette_existante.mensualite_totale is not none else "N/A" }}</div>
+    <div><span class="label">Capital restant dû</span>{{ extraction.dette_existante.capital_restant_total ~ " DH" if extraction.dette_existante.capital_restant_total is not none else "N/A" }}</div>
+</div>
+
+<h3>Comptes bancaires</h3>
+{% if extraction.comptes_bancaires %}
+<table>
+    <tr><th>Banque</th><th>Solde fin de période</th><th>Rejets détectés</th></tr>
+    {% for c in extraction.comptes_bancaires %}
+    <tr>
+        <td>{{ c.banque or "N/A" }}</td>
+        <td>{{ c.solde_fin_periode ~ " DH" if c.solde_fin_periode is not none else "N/A" }}</td>
+        <td class="{{ 'verdict-severe' if c.nombre_rejets and c.nombre_rejets > 0 else '' }}">{{ c.nombre_rejets if c.nombre_rejets is not none else "N/A" }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<p class="empty">Aucun relevé bancaire extrait.</p>
+{% endif %}
+
+<!-- ============================== SECTION 2 : ANALYSE ============================== -->
+<h2>2. Analyse financière</h2>
+
+<div class="kv-grid">
+    <div><span class="label">Secteur retenu</span>{{ analyse.secteur or "N/A" }}</div>
+    <div><span class="label">Taille</span>{{ analyse.taille or "N/A" }}</div>
+    <div><span class="label">Score Altman</span>
+        {% if analyse.altman_score %}
+            {{ analyse.altman_score.score }} ({{ analyse.altman_score.model }}) — zone {{ analyse.altman_score.zone }}
+        {% else %}N/A{% endif %}
+    </div>
+    <div><span class="label">DSCR</span>
+        {% if analyse.dscr %}
+            {{ analyse.dscr.dscr }} ({{ "acceptable" if analyse.dscr.is_dscr_acceptable else "insuffisant" }})
+        {% else %}N/A{% endif %}
+    </div>
+</div>
+
+<h3>Ratios comparés à la norme sectorielle</h3>
+{% if analyse.ratios %}
+<table>
+    <tr><th>Ratio</th><th>Valeur client</th><th>Verdict</th></tr>
+    {% for r in analyse.ratios %}
+    {% set v = r.verdict.verdict if r.verdict else None %}
+    <tr>
+        <td>{{ r.ratio_name }}</td>
+        <td>{{ r.ratio_value }}</td>
+        <td class="{{ 'verdict-severe' if v in ['critique', 'alerte'] else ('verdict-attention' if v == 'a_surveiller' else 'verdict-ok') }}">
+            {{ v or "—" }}
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<p class="empty">Aucun ratio comparé (secteur non déterminable ou benchmark non disponible).</p>
+{% endif %}
+
+<h3>Anomalies détectées</h3>
+{% if analyse.anomalies %}
+<table>
+    <tr><th>Ratio</th><th>Verdict</th><th>Sévérité</th></tr>
+    {% for a in analyse.anomalies %}
+    <tr>
+        <td>{{ a.ratio_name }}</td>
+        <td>{{ a.verdict }}</td>
+        <td class="{{ 'verdict-severe' if a.severite == 'elevee' else 'verdict-attention' }}">{{ a.severite }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<p class="empty">Aucune anomalie détectée.</p>
+{% endif %}
+
+<h3>Patterns croisés (combinaisons de ratios)</h3>
+{% if analyse.patterns %}
+    {% for p in analyse.patterns %}
+    <div class="pattern-item">
+        <div class="pattern-niveau-{{ p.niveau_risque }}">{{ p.titre }} — risque {{ p.niveau_risque }}</div>
+        <div>{{ p.diagnostic }}</div>
+    </div>
+    {% endfor %}
+{% else %}
+<p class="empty">Aucun pattern de risque déclenché.</p>
+{% endif %}
+
+{% if analyse.alertes_coherence %}
+<h3>Alertes (Centrale des Risques BAM)</h3>
+<ul>
+    {% for alerte in analyse.alertes_coherence %}
+    <li class="verdict-severe">{{ alerte }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+<h3>Conclusion de l'agent d'analyse</h3>
+<div class="conclusion-box">{{ analyse.conclusion or "Non disponible." }}</div>
+
+<!-- ============================== SECTION 3 : DÉCISION ============================== -->
+<h2>3. Décision de crédit</h2>
+
+{% if decision.decision %}
+<p>
+    <span class="badge badge-{{ decision.decision }}">{{ decision.decision | upper }}</span>
+    <span style="margin-left: 1em; color: #52606d;">Score de risque : {{ decision.score }}</span>
+</p>
+<h3>Justification</h3>
+<div class="justification-box">{{ decision.justification or "Non disponible." }}</div>
+{% else %}
+<p class="empty">Décision non disponible{{ " : " ~ decision.erreur if decision.erreur else "" }}.</p>
+{% endif %}
+
+</body>
+</html>
