@@ -27,24 +27,19 @@ from tools.validation_tool import get_validation_report
 @tool
 def outil_profil_client(client_id: str) -> str:
     """
-    Récupère l'identité et le secteur d'activité réel du client (texte
-    libre, ex. "Commerce de matériaux de construction") déjà extraits de
-    son dossier par document-service. À appeler avant
-    outil_benchmark_sectoriel : c'est la SEULE source du secteur réel du
-    client — jamais à deviner.
+    Identité et secteur réel du client (texte libre, ex. "Commerce de
+    matériaux de construction") — SEULE source du secteur, jamais à
+    deviner. À appeler avant outil_benchmark_sectoriel.
 
-    "secteur_code_suggere" (optionnel) : si présent (ex. "COM"), c'est un
-    cas non ambigu déjà résolu de façon déterministe (préfixe "Commerce
-    de"/"Négoce de"/"Distribution de"/"Import-export de" — achète et
-    revend X, quel que soit X) — utilise-le DIRECTEMENT, sans appeler
-    outil_recherche_normes ni réinterpréter toi-même le texte libre
-    (l'exemple "Commerce de matériaux de construction" a déjà été mal
-    classé en BTP par erreur malgré l'exemple explicite du prompt système
-    — ce champ existe pour éliminer ce risque). S'il est absent (null),
-    rapproche le texte libre d'un des 6 codes de
-    00_segmentation_reference.md via outil_recherche_normes, comme
-    d'habitude. Pour le détail bancaire ou les alertes de cohérence, voir
-    outil_validation_dossier (outil séparé, optionnel).
+    "secteur_code_suggere" (optionnel) : si présent (ex. "COM"), cas déjà
+    résolu de façon déterministe (préfixe "Commerce/Négoce/Distribution/
+    Import-export de X") — utilise-le DIRECTEMENT, sans réinterpréter le
+    texte ni appeler outil_recherche_normes (élimine un risque de mauvais
+    classement déjà rencontré : "Commerce de matériaux de construction"
+    classé à tort en BTP). Sinon, rapproche le texte libre d'un des 6
+    codes de 00_segmentation_reference.md via outil_recherche_normes.
+    Détail bancaire / alertes de cohérence : voir outil_validation_dossier
+    (optionnel).
     """
     try:
         profile = get_client_profile(client_id)
@@ -94,19 +89,15 @@ def outil_recherche_normes(question: str) -> str:
 @tool
 def outil_rapport_financier(client_id: str) -> str:
     """
-    Récupère les ratios financiers déjà calculés d'un client auprès de
-    financial-service (liquidité, rentabilité, solvabilité, activité,
-    DSCR, score de défaillance Altman) — à comparer ensuite aux normes
-    RAG via outil_benchmark_sectoriel. Pour l'évolution sur 3 exercices,
-    voir outil_tendances (outil séparé, optionnel) plutôt que de la
-    redemander ici.
+    Ratios financiers déjà calculés d'un client (liquidité, rentabilité,
+    solvabilité, activité, DSCR, score Altman) — à comparer ensuite via
+    outil_benchmark_sectoriel. Évolution sur 3 exercices : outil_tendances
+    (optionnel), pas ici.
 
-    "altman_score" ("model"/"score"/"zone"/"formula_used", zone =
-    "safe"/"grey"/"distress") est un score global déjà calculé — NE LE
-    MENTIONNE PAS toi-même dans ta conclusion, il est ajouté
-    automatiquement après coup par du code séparé (voir point 6 du
-    prompt système). outil_patterns_croises vérifie déjà sa cohérence
-    avec le reste de l'analyse (voir "coherence_altman").
+    "altman_score" (zone = "safe"/"grey"/"distress") est déjà calculé —
+    NE LE MENTIONNE JAMAIS toi-même, ajouté automatiquement après coup
+    (outil_patterns_croises vérifie déjà sa cohérence via
+    "coherence_altman").
     """
     try:
         report = get_financial_report(client_id)
@@ -139,74 +130,52 @@ def outil_rapport_financier(client_id: str) -> str:
 @tool
 def outil_benchmark_sectoriel(client_id: str, secteur: str, taille: str | None = None) -> str:
     """
-    Compare chaque ratio calculé du client à la norme sectorielle
-    correspondante du RAG. `secteur` doit être un des 6 codes de
-    00_segmentation_reference.md (BTP, IND, COM, SRV, HOT, TRA) — à
-    déterminer via outil_recherche_normes si besoin avant d'appeler cet
-    outil.
+    Compare chaque ratio du client à la norme sectorielle du RAG.
+    `secteur` doit être un des 6 codes (BTP, IND, COM, SRV, HOT, TRA — voir
+    00_segmentation_reference.md, via outil_recherche_normes si besoin).
 
-    `taille` (optionnel, "TPE", "PME" ou "GE") : LAISSE ABSENT dans le cas
-    normal — la taille de l'entreprise (nécessaire pour current_ratio,
-    roe_return_on_equity, autonomie_financiere) est calculée
-    automatiquement à partir du chiffre d'affaires et du total actif du
-    dossier, tu n'as rien à faire. Ne renseigne ce paramètre QUE si la
-    question posée à l'agent précise une taille différente explicitement
-    — ne la devine JAMAIS toi-même à partir du secteur, du capital social
-    ou de toute autre donnée indirecte.
+    `taille` (optionnel, "TPE"/"PME"/"GE") : LAISSE ABSENT dans le cas
+    normal — calculée automatiquement depuis le chiffre d'affaires et le
+    total actif du dossier. Ne le renseigne QUE si la question précise une
+    taille explicite — jamais devinée depuis le secteur, le capital ou
+    toute autre donnée indirecte (une tranche devinée a déjà produit de
+    fausses anomalies).
 
-    Réponse structurée : "taille" (celle utilisée pour les comparaisons),
-    "taille_source" ("calculée automatiquement..." ou "fournie par
-    l'utilisateur"), "taille_ecart" (si le chiffre d'affaires et le total
-    actif pointent vers des tailles différentes — à mentionner dans la
-    conclusion, ce peut être un signal utile en soi, ex. foncière/
-    holding), "references" (texte brut, mais SEULEMENT pour les ratios
-    SANS champ "verdict" — le budget de tokens/minute Groq est serré,
-    inutile de renvoyer le texte intégral d'une table déjà résumée en
-    verdict), "comparisons" (un "reference_id" par ratio, et "verdict"
-    quand il a été calculé), "anomalies_detectees" (déjà filtré en
-    Python : uniquement les ratios dont le verdict N'EST PAS sain, avec
-    "severite" = "elevee" ou "a_surveiller" — voir plus bas) et
-    "comparisons_indisponibles" (ratios qu'il n'a pas été possible de
-    comparer, avec la raison — n'arrive que si même le calcul automatique
-    de la taille échoue ; à signaler dans la conclusion, jamais à ignorer
-    silencieusement). Les combinaisons de ratios qui se contredisent ou
-    s'expliquent mutuellement (ex. trésorerie confortable mais
-    recouvrement dégradé) sont détectées par outil_patterns_croises, pas
-    ici — voir cet outil pour la partie "risques" de ta conclusion.
+    Réponse : "taille" (utilisée), "taille_ecart" (si le chiffre
+    d'affaires et le total actif pointent vers des tailles différentes —
+    à mentionner en conclusion, signal potentiellement utile, ex.
+    foncière/holding), "references" (texte RAG brut, SEULEMENT pour les
+    ratios SANS "verdict"), "comparisons" (verdict par ratio quand
+    calculé), "anomalies_detectees" (déjà filtré : verdicts non sains,
+    avec "severite" = "elevee"/"a_surveiller"), "comparisons_indisponibles"
+    (ratios non comparables + raison, à signaler jamais ignorer). Les
+    combinaisons de ratios qui se contredisent ou s'expliquent
+    mutuellement sont détectées par outil_patterns_croises, pas ici.
 
-    IMPORTANT — pour la section "Risques" de ta conclusion, ne cite QUE
-    des ratios présents dans "anomalies_detectees", jamais un ratio que tu
-    aurais toi-même jugé anormal en relisant "comparisons" : c'est cette
-    relecture manuelle qui a déjà produit des contradictions (ex. citer
-    "debt_to_equity élevé" comme risque alors que son verdict dans
-    "comparisons" est "dans_la_norme" juste au-dessus, ou citer
-    working_capital_frf comme risque alors qu'il n'a jamais de verdict).
-    "anomalies_detectees" est déjà le bon filtre, ne le recalcule pas.
+    IMPORTANT — pour "Risques", cite UNIQUEMENT "anomalies_detectees",
+    jamais un ratio relu toi-même dans "comparisons" : cette relecture
+    manuelle a déjà produit des contradictions (ex. citer un ratio
+    "dans_la_norme" comme risque, ou working_capital_frf qui n'a jamais de
+    verdict). "anomalies_detectees" est déjà le bon filtre.
 
-    IMPORTANT : quand une entrée de "comparisons" contient un champ
-    "verdict", il a déjà été calculé en Python à partir du texte RAG —
-    NE LE RECALCULE PAS toi-même à partir du texte de "references",
-    contente-toi de le reprendre tel quel dans ta conclusion (reformule
-    en français, mais ne compare jamais à nouveau la valeur à une borne
-    lue dans le texte). Deux familles de verdicts possibles :
-    - Ratios à fourchette (min/max) : "dans_la_norme", "au_dessus_norme",
-      "en_dessous_norme", "au_dela_seuil_alerte", "en_dessous_seuil_alerte",
-      "zone_confortable".
-    - Ratios à zones qualitatives universelles, sans segmentation secteur/
-      taille (cash_ratio, net_current_liabilities_to_assets,
-      retained_earnings_to_current_liabilities) : verdict = le nom de la
-      zone (ex. "zone_confortable", "besoin_significatif", "coussin_
-      faible") — reformule simplement en français, ce n'est ni bon ni
-      mauvais par défaut, lis le texte RAG associé pour la nuance.
+    IMPORTANT : un champ "verdict" est déjà calculé en Python à partir du
+    texte RAG — NE LE RECALCULE JAMAIS depuis "references", reprends-le
+    tel quel (reformule en français, mais ne recompare jamais la valeur à
+    une borne lue dans le texte — erreur fréquente : comparer à "Moyenne"
+    au lieu du couple min/max). Deux familles : fourchette
+    ("dans_la_norme", "au_dessus_norme", "en_dessous_norme",
+    "au_dela_seuil_alerte", "en_dessous_seuil_alerte", "zone_confortable")
+    et zone qualitative universelle (cash_ratio,
+    net_current_liabilities_to_assets,
+    retained_earnings_to_current_liabilities — le nom de zone EST le
+    verdict, ni bon ni mauvais par défaut, lis le texte RAG pour la
+    nuance).
 
-    Seul `liquidite.working_capital_frf` n'a jamais de champ "verdict" (et
-    n'en aura jamais) : c'est un montant absolu en MAD, pas un ratio — un
-    seuil chiffré y serait mathématiquement faux car il dépend de la
-    taille exacte de l'entreprise. Le même signal existe déjà, normalisé,
-    sous solvabilite.net_current_liabilities_to_assets (rapporté au total
-    actif) — reporte-toi à CE ratio pour interpréter le besoin de
-    financement court terme, ne commente jamais working_capital_frf comme
-    "dans" ou "hors norme" à partir de sa seule valeur brute.
+    `liquidite.working_capital_frf` n'a JAMAIS de verdict (montant absolu
+    en MAD, un seuil chiffré y serait faux selon la taille de
+    l'entreprise) — ne le qualifie jamais de "dans"/"hors norme" ; utilise
+    solvabilite.net_current_liabilities_to_assets (même signal, normalisé)
+    pour interpréter le besoin de financement court terme.
     """
     try:
         result = check_client_ratios(client_id, secteur, taille)
@@ -218,22 +187,19 @@ def outil_benchmark_sectoriel(client_id: str, secteur: str, taille: str | None =
 @tool
 def outil_patterns_croises(client_id: str, secteur: str, taille: str | None = None) -> str:
     """
-    Détecte, parmi 49 combinaisons de ratios documentées, lesquelles
-    s'appliquent réellement au client (ex. trésorerie confortable +
-    recouvrement dégradé, ROE porté par le levier). Complète
-    outil_benchmark_sectoriel (qui compare CHAQUE ratio séparément) en
-    regardant comment PLUSIEURS se combinent. Calculé en Python à partir
-    des verdicts déjà connus — n'invente jamais une combinaison non
-    listée ici, n'en ignore aucune renvoyée. Aucun résultat = normal.
+    Détecte, parmi 49 combinaisons documentées, celles qui s'appliquent
+    réellement au client (ex. trésorerie confortable + recouvrement
+    dégradé). Complète outil_benchmark_sectoriel (ratio par ratio) en
+    regardant comment PLUSIEURS se combinent. Calculé en Python — n'invente
+    jamais une combinaison non listée, n'en ignore aucune renvoyée. Aucun
+    résultat = normal.
 
-    Réponse : "patterns_declenches", chacun avec "diagnostic" (à
-    reprendre fidèlement) et "hypotheses" (plusieurs lectures possibles —
-    n'en retiens JAMAIS une seule comme certaine). Un id "GLOB.xxx" donne
-    une vue d'ensemble à privilégier pour le diagnostic global de ta
-    conclusion. "coherence_altman" (présent seulement s'il y a une
-    divergence entre le score Altman et la synthèse par patterns) N'EST
-    PAS à mentionner toi-même : il est ajouté automatiquement à ta
-    réponse par du code séparé, après coup.
+    Réponse : "patterns_declenches", chacun avec "diagnostic" (à reprendre
+    fidèlement) et "hypotheses" (JAMAIS une seule retenue comme certaine).
+    Un id "GLOB.xxx" = vue d'ensemble à privilégier pour le diagnostic
+    global. "coherence_altman" (si divergence entre score Altman et
+    synthèse patterns) N'EST PAS à mentionner toi-même — ajouté
+    automatiquement après coup.
     """
     try:
         result = check_client_patterns(client_id, secteur, taille)
@@ -287,6 +253,66 @@ TOOLS = [
 ]
 
 _tool_node = ToolNode(TOOLS)
+
+# Champs à retirer de la VUE envoyée au LLM (jamais de l'état persisté, voir
+# build_llm_view ci-dessous) pour chaque outil. "comparisons" de
+# outil_benchmark_sectoriel (16-18 entrées, ~600-900 tokens à lui seul) est
+# le cas qui a motivé cette liste : la docstring de l'outil instruit déjà le
+# LLM de ne jamais s'en servir pour sa conclusion — seul "anomalies_detectees"
+# (déjà filtré) doit l'être — ce champ est donc mort pour l'agent dès qu'il
+# est produit, mais restait renvoyé et réexpédié en entier à CHAQUE tour
+# suivant jusqu'à la fin du run (aucune purge de l'historique, voir state.py).
+# "taille_source" (bookkeeping "calculée automatiquement" / "fournie par
+# l'utilisateur") : jamais mentionné par le prompt système, seul
+# "taille_ecart" (gardé) doit l'être — sert uniquement à _extract_benchmark
+# (api/routes.py) pour la réponse HTTP, lue depuis l'état persisté, jamais
+# depuis ce que voit le LLM.
+#
+# "references" (texte RAG brut) et "chunk_id"/"reference_id" à l'intérieur
+# de "comparisons" ne sont volontairement PAS dans cette liste :
+# "references" reste le seul moyen pour le LLM d'interpréter
+# working_capital_frf (aucun verdict pré-calculé pour ce ratio, voir
+# benchmark_tool.py) et doit donc rester lisible à CHAQUE tour, y compris
+# celui où il rédige sa conclusion finale — un champ utile une seule fois
+# n'est pas forcément inutile aux tours suivants, contrairement à
+# "comparisons" que le LLM n'a jamais le droit d'utiliser.
+_LLM_VIEW_DROP_FIELDS = {
+    "outil_benchmark_sectoriel": ["comparisons", "taille_source"],
+}
+
+
+def build_llm_view(messages: list) -> list:
+    """
+    Construit la liste de messages réellement envoyée au LLM à chaque tour
+    (voir planner.py, agent_node) — allégée des champs de _LLM_VIEW_DROP_FIELDS.
+
+    Ne touche JAMAIS aux messages d'origine ni à l'état persisté par
+    LangGraph : routes.py relit l'historique complet après coup pour
+    construire la réponse HTTP (ex. "comparisons" alimente directement le
+    tableau de ratios du frontend, voir api/routes.py:_extract_benchmark) —
+    seule la copie envoyée à Groq est réduite, jamais ce qui est stocké.
+    """
+    compacted = []
+    for message in messages:
+        drop_fields = _LLM_VIEW_DROP_FIELDS.get(getattr(message, "name", None))
+        if not (isinstance(message, ToolMessage) and drop_fields):
+            compacted.append(message)
+            continue
+        try:
+            data = json.loads(message.content)
+        except (json.JSONDecodeError, TypeError):
+            compacted.append(message)
+            continue
+        for field in drop_fields:
+            data.pop(field, None)
+        compacted.append(
+            ToolMessage(
+                content=json.dumps(data, ensure_ascii=False),
+                tool_call_id=message.tool_call_id,
+                name=message.name,
+            )
+        )
+    return compacted
 
 
 def tools_node(state: dict) -> dict:
