@@ -66,10 +66,24 @@ multiples, actions d'investigation). Retirée pour ne laisser qu'une
 seule source de vérité.
 """
 
+import time
+
 from tools.financial_report_tool import get_financial_report
 from tools.rag_tool import rag_search
 from tools.ratio_table_parser import parse_verdict
 from tools.taille_classifier import classify_taille_code
+
+# outil_patterns_croises (graph/nodes.py) a besoin du même résultat que
+# outil_benchmark_sectoriel (mêmes secteur/taille, appelés à quelques
+# secondes d'intervalle dans le même run — voir planner.py, "appelle
+# ensuite outil_patterns_croises (mêmes secteur/taille qu'à l'étape 4)")
+# mais le recalculait entièrement (~17 requêtes RAG, une par ratio,
+# refaites deux fois par analyse). TTL court (pas un cache permanent) :
+# assez long pour couvrir cet écart au sein d'un même run, assez court
+# pour ne jamais servir un résultat périmé entre deux analyses séparées
+# du même client (ex. après un ré-upload de son dossier).
+_RATIOS_CACHE_TTL_SECONDS = 30
+_ratios_cache: dict[tuple[str, str, str | None], tuple[float, dict]] = {}
 
 # Catégories de ratios couvertes par une fiche de normes sectorielles
 # (data/docs/) — cash_flow et dscr n'ont pas de fiche associée, donc pas
@@ -227,6 +241,26 @@ def _auto_classify_taille(report: dict) -> tuple[str | None, str, str | None]:
 
 
 def check_client_ratios(client_id: str, secteur: str, taille: str | None = None) -> dict:
+    """
+    Enveloppe mise en cache de `_check_client_ratios_impl` (voir
+    `_RATIOS_CACHE_TTL_SECONDS` ci-dessus) — même signature, mêmes
+    garanties, juste évite de refaire le calcul (et les ~17 requêtes RAG
+    qu'il déclenche) quand `outil_patterns_croises` le rappelle avec les
+    mêmes arguments juste après `outil_benchmark_sectoriel`.
+    """
+    key = (client_id, secteur, taille)
+    cached = _ratios_cache.get(key)
+    if cached is not None:
+        cached_at, result = cached
+        if time.monotonic() - cached_at < _RATIOS_CACHE_TTL_SECONDS:
+            return result
+
+    result = _check_client_ratios_impl(client_id, secteur, taille)
+    _ratios_cache[key] = (time.monotonic(), result)
+    return result
+
+
+def _check_client_ratios_impl(client_id: str, secteur: str, taille: str | None = None) -> dict:
     """
     Pour un client donné, rassemble le contexte de benchmark (valeur
     mesurée + norme RAG) pour chaque ratio couvert par une fiche

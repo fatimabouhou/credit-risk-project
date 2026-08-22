@@ -26,6 +26,12 @@ def extract_all_transactions_from_cih():
     
     realistic_transactions = [
         # JUILLET 2023
+        # Scenario decouvert + rejet : le solde initial (10M) ne suffit pas a
+        # couvrir ce virement urgent -> solde cumule negatif quelques jours,
+        # jusqu'au versement du 05/07 (memes scenarios que le mock Attijari,
+        # pour verifier l'extraction rejets/decouvert sur les 2 formats reels).
+        ("2023-07-02", "DEBIT", 11500000.00, "VIREMENT URGENT TRAVAUX BARRAGE"),
+        ("2023-07-03", "DEBIT", 20000.00, "REJET PRELEVEMENT IMPAYE FOURNISSEUR"),
         ("2023-07-05", "CREDIT", 8000000.00, "VERSEMENT PROJET CONSTRUCTION BARRAGE"),
         ("2023-07-10", "DEBIT", 250000.00, "REMBOURSEMENT INTERET PRET IMMOBILIER"),
         ("2023-07-15", "DEBIT", 1500000.00, "REMBOURSEMENT CAPITAL PRET BARRAGE"),

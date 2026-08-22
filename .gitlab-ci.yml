@@ -1,0 +1,170 @@
+# =============================================================================
+# CI de la plateforme de risque de crédit.
+#
+# Un job par service testé, chacun déclenché uniquement quand SON code change
+# (règles `changes`) : modifier le frontend ne relance pas la suite Python, et
+# inversement. Sur la branche par défaut et sur les merge requests, tout tourne.
+#
+# Aucun job n'a besoin de MongoDB, Postgres ni Chroma : ces suites couvrent la
+# logique déterministe (calculs financiers, score de décision, transformations
+# d'affichage), pas les intégrations. C'est délibéré — ce sont les parties dont
+# une régression silencieuse fausserait un dossier de crédit.
+# =============================================================================
+
+stages:
+  - test
+  - build
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  npm_config_cache: "$CI_PROJECT_DIR/.cache/npm"
+
+default:
+  interruptible: true
+
+# =============================================================================
+# financial-service — moteur de calcul déterministe
+# =============================================================================
+test:financial-service:
+  stage: test
+  image: python:3.12-slim
+  cache:
+    key: pip-financial
+    paths:
+      - .cache/pip
+  before_script:
+    - cd financial-service
+    - pip install --quiet pytest fastapi pymongo
+  script:
+    - pytest -v --junitxml=../report-financial.xml
+  artifacts:
+    when: always
+    reports:
+      junit: report-financial.xml
+    expire_in: 1 week
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - financial-service/**/*
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - when: manual
+      allow_failure: true
+
+# =============================================================================
+# document-service — extraction des pièces (entrée de toute la chaîne)
+# =============================================================================
+test:document-service:
+  stage: test
+  image: python:3.12-slim
+  cache:
+    key: pip-document
+    paths:
+      - .cache/pip
+  before_script:
+    - cd document-service
+    - pip install --quiet pytest pdfplumber fastapi pymongo httpx python-multipart
+  script:
+    - pytest -v --junitxml=../report-document.xml
+  artifacts:
+    when: always
+    reports:
+      junit: report-document.xml
+    expire_in: 1 week
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - document-service/**/*
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - when: manual
+      allow_failure: true
+
+# =============================================================================
+# agentic-service — score de décision et routage du graphe
+# =============================================================================
+test:agentic-service:
+  stage: test
+  image: python:3.11-slim
+  cache:
+    key: pip-agentic
+    paths:
+      - .cache/pip
+  before_script:
+    - cd agentic-service
+    # requirements-test.txt, pas `poetry install` : l'install complète tire
+    # torch + sentence-transformers (~2 Go) pour l'embedding RAG, dont aucun
+    # test n'a besoin. Voir tests/conftest.py pour la neutralisation.
+    - pip install --quiet -r requirements-test.txt
+  script:
+    - pytest -v --junitxml=../report-agentic.xml
+  artifacts:
+    when: always
+    reports:
+      junit: report-agentic.xml
+    expire_in: 1 week
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - agentic-service/**/*
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - when: manual
+      allow_failure: true
+
+# =============================================================================
+# frontend — logique d'affichage et typage
+# =============================================================================
+test:frontend:
+  stage: test
+  image: node:22-alpine
+  cache:
+    key: npm-frontend
+    paths:
+      - .cache/npm
+  before_script:
+    - cd frontend
+    - npm ci --prefer-offline --no-audit --fund=false || npm install --no-audit --fund=false
+  script:
+    # Le typage fait partie du contrat : une régression de type est une
+    # régression, même si les tests passent.
+    - npx tsc --noEmit -p tsconfig.json
+    - npx vitest run --reporter=default --reporter=junit --outputFile=../report-frontend.xml
+  artifacts:
+    when: always
+    reports:
+      junit: report-frontend.xml
+    expire_in: 1 week
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - frontend/**/*
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - when: manual
+      allow_failure: true
+
+# =============================================================================
+# Vérification que le bundle de production se construit encore.
+# Séparé des tests : un build cassé et un test rouge ne se diagnostiquent pas
+# de la même façon.
+# =============================================================================
+build:frontend:
+  stage: build
+  image: node:22-alpine
+  needs: ["test:frontend"]
+  cache:
+    key: npm-frontend
+    paths:
+      - .cache/npm
+    policy: pull
+  before_script:
+    - cd frontend
+    - npm ci --prefer-offline --no-audit --fund=false || npm install --no-audit --fund=false
+  script:
+    - npm run build
+  artifacts:
+    paths:
+      - frontend/dist
+    expire_in: 1 week
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - frontend/**/*
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH

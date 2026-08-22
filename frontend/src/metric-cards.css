@@ -1,0 +1,888 @@
+.reference-kpis {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:20px;
+  margin-top:22px;
+}
+
+.reference-kpi {
+  position:relative;
+  height:250px;
+  overflow:hidden;
+  padding:20px 18px;
+  border:1px solid rgba(255,92,106,.16);
+  border-radius:20px;
+  background:radial-gradient(circle at 15% 8%,rgba(123,28,39,.22),transparent 36%),linear-gradient(135deg,#171113 0%,#090a0b 70%,#170b0e 100%);
+  box-shadow:inset 0 1px rgba(255,255,255,.025),0 18px 38px rgba(0,0,0,.18);
+}
+
+.reference-kpi__heading { display:flex; align-items:center; gap:11px; color:#ff4054; font-size:11px; font-weight:700; letter-spacing:.3px; white-space:nowrap; }
+.reference-kpi__icon { display:grid; place-items:center; width:38px; height:38px; flex:0 0 38px; border-radius:50%; color:#ff4054; background:radial-gradient(circle at 36% 32%,#8e2934 0%,#4a161e 55%,rgba(73,18,25,.3) 100%); box-shadow:0 0 18px rgba(255,52,72,.28),inset 0 0 8px rgba(255,110,122,.12); }
+.reference-kpi>strong { position:absolute; top:70px; left:18px; margin:0; color:#faf9fa; font:700 32px/1.1 Manrope,Arial,sans-serif; letter-spacing:-1.4px; }
+.reference-kpi>strong small { font:400 32px/1.1 Manrope,Arial,sans-serif; letter-spacing:-1px; }
+.reference-kpi>p { position:absolute; top:110px; left:18px; margin:0; color:#b8b4b6; font-size:11px; }
+.reference-kpi>p.reference-kpi__danger { color:#ff4054; }
+.reference-kpi__delta { position:absolute; z-index:2; top:145px; left:18px; display:flex; align-items:center; gap:10px; color:#aaa6a8; font-size:11px; white-space:nowrap; }
+.reference-kpi__delta span { display:flex; align-items:center; gap:6px; padding:7px 10px; border-radius:6px; color:#ff5364; background:rgba(103,27,37,.26); font:600 11px 'DM Mono',monospace; }
+.reference-kpi__delta em { color:#aaa6a8; font-style:normal; }
+.reference-kpi__curve { position:absolute; right:14px; bottom:14px; left:14px; width:calc(100% - 28px); height:46px; }
+.reference-kpi--bars>strong { line-height:1.15; }
+.reference-kpi--bars .reference-kpi__delta { top:148px; left:18px; display:block; }
+.reference-kpi--bars .reference-kpi__delta em { display:block; margin:8px 0 0 3px; }
+.reference-kpi__bars { position:absolute; right:18px; bottom:14px; display:flex; height:80px; align-items:end; gap:5px; }
+.reference-kpi__bars i { display:block; width:7px; min-height:2px; border-radius:2px 2px 0 0; background:linear-gradient(#ff5262,#b62131); box-shadow:0 0 10px rgba(255,65,82,.5); }
+.reference-kpi__dots { position:absolute; right:18px; bottom:26px; left:18px; display:flex; align-items:center; justify-content:space-between; }
+.reference-kpi__dots i { width:5px; height:5px; border-radius:50%; background:#e6374a; box-shadow:0 0 4px rgba(255,54,73,.4); }
+.reference-kpi__dots i.active { width:10px; height:10px; border:3px solid #fff1f2; background:#f44355; box-shadow:0 0 10px #f44355; }
+
+@media(max-width:1100px) {
+  .reference-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media(max-width:760px) {
+  .reference-kpis { grid-template-columns:1fr; }
+  .reference-kpi { height:260px; }
+}
+
+/* Cartes KPI de la page Intelligence documentaire : alignées sur la maquette de
+   référence (pastille ronde rouge lumineuse, valeur Manrope, fond sombre teinté). */
+.doc-kpis { gap:18px; margin-bottom:20px; }
+.doc-kpis article {
+  position:relative;
+  overflow:hidden;
+  gap:16px;
+  min-height:104px;
+  padding:20px 18px;
+  border:1px solid rgba(255,92,106,.16);
+  border-radius:14px;
+  background:radial-gradient(circle at 14% 8%,rgba(123,28,39,.24),transparent 44%),linear-gradient(135deg,#171113 0%,#090a0b 68%,#170b0e 100%);
+  box-shadow:inset 0 1px rgba(255,255,255,.025),0 14px 30px rgba(0,0,0,.2);
+}
+.doc-kpis article:after { content:''; position:absolute; right:12%; bottom:0; left:12%; height:1px; background:linear-gradient(90deg,transparent,rgba(255,64,84,.55),transparent); }
+.doc-kpis .icon-box {
+  width:50px; height:50px; flex:0 0 50px;
+  border-radius:50%;
+  color:#ff4054;
+  background:radial-gradient(circle at 36% 32%,#8e2934 0%,#4a161e 55%,rgba(73,18,25,.3) 100%);
+  box-shadow:0 0 18px rgba(255,52,72,.28),inset 0 0 8px rgba(255,110,122,.12);
+}
+.doc-kpis span { color:#b8b4b6; font-size:11px; }
+.doc-kpis strong { margin:5px 0 4px; color:#faf9fa; font:700 29px/1.05 Manrope,Arial,sans-serif; letter-spacing:-1.1px; }
+.doc-kpis small { color:#8f8b8d; font-size:11px; }
+.doc-kpis .up,.doc-kpis .down { color:#8f8b8d!important; }
+
+/* ------------------------------------------------------------------
+   Pièces du dossier : table d'extraction. Reprend la charte rouge du
+   dashboard (halos, dégradés radiaux, accents lumineux) plutôt que les
+   verts/teals hérités de la première maquette.
+   ------------------------------------------------------------------ */
+.doc-table {
+  position:relative;
+  overflow:hidden;
+  padding:21px 20px 18px;
+  border:1px solid rgba(255,92,106,.16);
+  border-radius:18px;
+  background:radial-gradient(ellipse at 6% -6%,rgba(148,32,45,.26),transparent 46%),linear-gradient(158deg,#15100f 0%,#0a0a0c 46%,#120a0d 100%);
+  box-shadow:inset 0 1px rgba(255,255,255,.03),0 26px 60px rgba(0,0,0,.34);
+}
+/* Halo diffus qui « éclaire » le coin haut-gauche du panneau. */
+.doc-table:before { content:''; position:absolute; z-index:0; top:-140px; left:-90px; width:340px; height:280px; pointer-events:none; border-radius:50%; background:radial-gradient(circle,rgba(255,52,72,.20),transparent 68%); filter:blur(18px); }
+.doc-table>* { position:relative; z-index:1; }
+
+.doc-kicker { display:flex; align-items:center; gap:9px; margin-bottom:9px; font-size:10px; letter-spacing:1.8px; }
+.doc-kicker i { width:7px; height:7px; border-radius:50%; background:#ff4054; box-shadow:0 0 10px #ff4054,0 0 22px rgba(255,64,84,.55); animation:doc-live 2.4s ease-in-out infinite; }
+@keyframes doc-live { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:.45; transform:scale(.78); } }
+
+.doc-table .panel-heading h2 { font-size:24px; letter-spacing:-1.1px; background:linear-gradient(96deg,#fff 12%,#ffd9dd 58%,#ff8792 100%); -webkit-background-clip:text; background-clip:text; color:transparent; }
+
+.doc-table-frame { position:relative; overflow:hidden; margin-top:17px; border:1px solid rgba(255,255,255,.055); border-radius:15px; background:linear-gradient(180deg,rgba(255,255,255,.014),transparent 22%); }
+/* Filet lumineux qui balaie le haut du tableau : rappel « extraction en direct ». */
+.doc-table-frame:before { content:''; position:absolute; z-index:2; top:0; left:0; width:100%; height:1px; background:linear-gradient(90deg,transparent,rgba(255,64,84,.85),transparent); background-size:38% 100%; background-repeat:no-repeat; animation:doc-scan 6.5s linear infinite; }
+@keyframes doc-scan { 0% { background-position:-40% 0; } 100% { background-position:140% 0; } }
+
+.doc-table .table-head,.doc-table .document-row { grid-template-columns:minmax(0,1.6fr) .72fr .78fr minmax(0,1.3fr); gap:11px; align-items:center; }
+.doc-table .table-head { margin:0; padding:13px 15px; border-bottom:1px solid rgba(255,255,255,.06); color:#8c9095; font:600 9px Manrope,Arial,sans-serif; letter-spacing:1.1px; text-transform:uppercase; background:linear-gradient(180deg,rgba(255,255,255,.03),transparent); }
+.doc-table .table-head span { display:flex; align-self:stretch; align-items:center; }
+.doc-table .table-head span+span { padding-left:11px; border-left:1px solid rgba(255,255,255,.06); }
+.doc-table .table-head span:last-child { border:0; padding:0; }
+
+.doc-table .document-row { position:relative; min-height:60px; padding:9px 15px; border-bottom:1px solid rgba(255,255,255,.045); font-size:12px; transition:background .2s; }
+.doc-table .document-row:last-child { border-bottom:0; }
+/* Liseré d'accent à gauche, coloré selon la tonalité de la ligne. */
+.doc-table .document-row:before { content:''; position:absolute; top:9px; bottom:9px; left:0; width:3px; border-radius:0 3px 3px 0; background:linear-gradient(180deg,#ff5364,#96202d); box-shadow:0 0 12px rgba(255,64,84,.45); transition:box-shadow .2s,top .2s,bottom .2s; }
+.doc-table .document-row[data-tone=warn]:before { background:linear-gradient(180deg,#ffb84d,#9a6516); box-shadow:0 0 12px rgba(255,164,33,.42); }
+.doc-table .document-row[data-tone=bad]:before { background:linear-gradient(180deg,#ff2740,#7d0f1c); box-shadow:0 0 14px rgba(255,39,64,.6); }
+.doc-table .document-row:hover { background:linear-gradient(90deg,rgba(255,64,84,.07),rgba(255,64,84,.015) 42%,transparent); }
+.doc-table .document-row:hover:before { top:0; bottom:0; box-shadow:0 0 18px rgba(255,64,84,.75); }
+
+.doc-name { min-width:0; gap:12px!important; }
+.doc-table .file-symbol { flex-shrink:0; width:38px; height:38px; border-radius:11px; color:#ff4054; border:1px solid rgba(255,92,106,.22); background:radial-gradient(circle at 34% 26%,rgba(180,48,63,.55),rgba(58,16,23,.85) 68%); box-shadow:0 0 18px rgba(255,52,72,.16),inset 0 1px rgba(255,255,255,.05); transition:box-shadow .2s,border-color .2s; }
+.doc-table .document-row:hover .file-symbol { border-color:rgba(255,92,106,.5); box-shadow:0 0 26px rgba(255,52,72,.34),inset 0 1px rgba(255,255,255,.08); }
+.doc-name b { overflow:hidden; color:#f4f0f1; font-size:12.5px; font-weight:600; letter-spacing:-.2px; text-overflow:ellipsis; white-space:nowrap; }
+.doc-table .category { padding-left:11px; color:#8e9296; font-size:11.5px; }
+
+.doc-table .status { width:max-content; gap:8px; padding:7px 12px; border:1px solid rgba(255,92,106,.24); border-radius:9px; color:#f0eaeb; background:rgba(255,64,84,.06); font-size:11.5px; font-weight:500; }
+.doc-table .status i { width:7px; height:7px; background:#ff4054; box-shadow:0 0 9px #ff4054; }
+.doc-table .document-row[data-tone=warn] .status { border-color:rgba(255,164,33,.3); background:rgba(255,164,33,.07); }
+.doc-table .document-row[data-tone=warn] .status i { background:#ffa421; box-shadow:0 0 9px #ffa421; }
+.doc-table .document-row[data-tone=bad] .status { border-color:rgba(255,39,64,.55); background:rgba(255,39,64,.14); color:#ffd7db; }
+.doc-table .document-row[data-tone=bad] .status i { background:#ff2740; box-shadow:0 0 11px #ff2740; }
+
+.doc-data { min-width:0; gap:10px!important; padding-left:11px; }
+.doc-data-icon { display:grid; flex-shrink:0; place-items:center; color:#ff4054; opacity:.85; transition:opacity .2s,filter .2s; }
+.doc-table .document-row:hover .doc-data-icon { opacity:1; filter:drop-shadow(0 0 7px rgba(255,64,84,.6)); }
+.doc-data small { display:block; min-width:0; color:#b6b1b3; font-size:11.5px; line-height:1.4; }
+.doc-table-empty { max-width:none; padding:26px 18px; margin:0; font-size:12px; }
+
+@media(max-width:900px) {
+  .doc-table { padding:22px 16px 18px; }
+  .doc-table .panel-heading h2 { font-size:25px; }
+  .doc-table .table-head,.doc-table .document-row { grid-template-columns:minmax(0,1.5fr) .9fr minmax(0,1fr); gap:10px; }
+  .doc-table .table-head span:nth-child(2),.doc-table .document-row .category { display:none; }
+  .doc-table .table-head span:nth-child(3) { padding-left:0; border-left:0; }
+  .doc-table .document-row,.doc-table .table-head { padding-left:14px; padding-right:12px; }
+  .doc-table .file-symbol { width:40px; height:40px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .doc-kicker i,.doc-table-frame:before { animation:none; }
+}
+
+/* ------------------------------------------------------------------
+   Profil extrait : carte identité client, même vocabulaire visuel que
+   la table (halo rouge, pastilles rondes, lignes en cartes).
+   ------------------------------------------------------------------ */
+.client-card {
+  padding:21px 20px 18px;
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:18px;
+  background:radial-gradient(ellipse at 50% -12%,rgba(148,32,45,.16),transparent 52%),linear-gradient(178deg,#141416 0%,#0b0b0d 58%,#100b0d 100%);
+  box-shadow:inset 0 1px rgba(255,255,255,.035),0 26px 60px rgba(0,0,0,.34);
+}
+/* Neutralise le halo turquoise hérité de l'ancienne charte. */
+.client-card:after { width:280px; height:280px; top:-160px; right:-90px; background:radial-gradient(circle,rgba(255,52,72,.5),transparent 70%); filter:blur(34px); opacity:.5; }
+
+.client-card .panel-heading h2 { margin-top:3px; font-size:23px; font-weight:800; letter-spacing:-.9px; }
+.client-card .panel-kicker { font-size:10px; letter-spacing:2.4px; }
+.verified { gap:6px; flex-shrink:0; padding:7px 11px; border:1px solid rgba(69,215,154,.32); border-radius:9px; color:#e7f6ef; background:rgba(69,215,154,.08); font-size:11px; font-weight:500; box-shadow:0 0 18px rgba(69,215,154,.1); }
+.verified svg { color:#45d79a; }
+
+.client-identity { position:relative; z-index:1; display:flex; align-items:center; gap:16px; margin:19px 0 16px; }
+.company-mark { flex-shrink:0; width:64px; height:64px; margin:0; border-radius:17px; background:linear-gradient(146deg,#ff6b74 0%,#f6394c 46%,#c81f33 100%); box-shadow:0 10px 24px rgba(226,42,60,.28),inset 0 1px rgba(255,255,255,.28); font-size:31px; font-weight:800; letter-spacing:-1px; }
+.client-identity p { margin:0; padding-left:16px; border-left:1px solid rgba(255,255,255,.09); color:#e9e5e6; font-size:12.5px; font-weight:500; line-height:1.55; }
+
+.client-card dl { position:relative; z-index:1; display:grid; gap:7px; }
+.client-card dl div { display:grid; grid-template-columns:auto auto minmax(0,1fr); align-items:center; gap:11px; min-height:48px; padding:8px 13px; border:1px solid rgba(255,255,255,.06); border-top:1px solid rgba(255,255,255,.06); border-radius:11px; background:linear-gradient(180deg,rgba(255,255,255,.022),rgba(255,255,255,.006)); transition:border-color .2s,background .2s; }
+.client-card dl div:hover { border-color:rgba(255,92,106,.28); background:linear-gradient(90deg,rgba(255,64,84,.07),rgba(255,255,255,.01) 60%); }
+.client-field-icon { display:grid; flex-shrink:0; place-items:center; width:30px; height:30px; border-radius:50%; color:#ff4054; border:1px solid rgba(255,92,106,.16); background:radial-gradient(circle at 36% 30%,rgba(255,64,84,.16),rgba(255,64,84,.03) 70%); transition:box-shadow .2s,border-color .2s; }
+.client-card dl div:hover .client-field-icon { border-color:rgba(255,92,106,.42); box-shadow:0 0 16px rgba(255,52,72,.22); }
+.client-card dt { color:#9d9a9c; font-size:11.5px; white-space:nowrap; }
+.client-card dd { min-width:0; color:#f4f0f1; font:500 11px 'DM Mono',monospace; letter-spacing:-.3px; line-height:1.5; overflow-wrap:anywhere; }
+
+.client-cta { position:relative; overflow:hidden; justify-content:space-between; width:100%; margin-top:16px; padding:13px 16px; border:1px solid rgba(255,64,84,.45); border-radius:11px; color:#ff4054; background:linear-gradient(180deg,rgba(255,64,84,.05),rgba(255,64,84,.13)); font-size:12.5px; font-weight:700; letter-spacing:-.2px; box-shadow:inset 0 -16px 24px -18px rgba(255,64,84,.75); transition:border-color .2s,box-shadow .2s,background .2s; }
+.client-cta:hover { border-color:#ff4054; background:linear-gradient(180deg,rgba(255,64,84,.09),rgba(255,64,84,.2)); box-shadow:inset 0 -18px 28px -18px rgba(255,64,84,.9),0 0 24px rgba(255,64,84,.22); }
+.client-cta svg { transition:transform .2s; }
+.client-cta:hover svg { transform:translateX(4px); }
+.client-cta[aria-expanded="true"] svg { transform:rotate(-90deg); }
+.client-cta[aria-expanded="true"]:hover svg { transform:rotate(-90deg) translateY(-4px); }
+
+/* ==================================================================
+   Ratios clés — refonte complète du panneau.
+   Les règles ci-dessous prennent le pas sur celles de styles.css
+   (même spécificité, feuille importée après).
+   ================================================================== */
+.ratio-panel {
+  position:relative;
+  overflow:hidden;
+  margin-top:20px;
+  padding:0 0 18px;
+  border:1px solid rgba(255,92,106,.14);
+  border-radius:20px;
+  background:radial-gradient(ellipse at 72% -18%,rgba(150,26,40,.22),transparent 54%),linear-gradient(168deg,#12100f 0%,#08090b 52%,#100a0d 100%);
+  box-shadow:inset 0 1px rgba(255,255,255,.03),0 28px 64px rgba(0,0,0,.36);
+}
+/* Neutralise l'ancienne « orbite » peinte en repeating-radial-gradient. */
+.ratio-panel:before { content:none; }
+
+/* ---------- Orbite animée ---------- */
+.ratio-orbit { position:absolute; z-index:0; top:-62px; right:80px; width:500px; height:260px; pointer-events:none; }
+.ratio-orbit i { position:absolute; top:50%; left:50%; display:block; border:1px solid rgba(255,64,84,.2); border-radius:50%; animation:ratio-spin linear infinite; }
+/* Chaque anneau porte son satellite : il orbite parce que l'anneau tourne. */
+.ratio-orbit i:after { content:''; position:absolute; top:50%; right:-3px; width:6px; height:6px; margin-top:-3px; border-radius:50%; background:#ff5364; box-shadow:0 0 10px #ff4054,0 0 20px rgba(255,64,84,.6); }
+.ratio-orbit i:nth-of-type(1) { width:470px; height:166px; margin:-83px 0 0 -235px; border-color:rgba(255,64,84,.11); animation-duration:64s; }
+.ratio-orbit i:nth-of-type(2) { width:370px; height:132px; margin:-66px 0 0 -185px; border-color:rgba(255,64,84,.15); animation-duration:48s; animation-direction:reverse; }
+.ratio-orbit i:nth-of-type(3) { width:275px; height:102px; margin:-51px 0 0 -138px; border-color:rgba(255,64,84,.2); animation-duration:36s; }
+.ratio-orbit i:nth-of-type(4) { width:186px; height:72px; margin:-36px 0 0 -93px; border-color:rgba(255,64,84,.28); animation-duration:25s; animation-direction:reverse; }
+.ratio-orbit i:nth-of-type(5) { width:110px; height:46px; margin:-23px 0 0 -55px; border-color:rgba(255,64,84,.36); animation-duration:16s; }
+.ratio-orbit-core { position:absolute; top:50%; left:50%; width:76px; height:32px; margin:-16px 0 0 -38px; border-radius:50%; background:radial-gradient(ellipse,#ffd0d4 0%,#ff4054 26%,rgba(214,32,49,.42) 52%,transparent 74%); filter:blur(3px); animation:ratio-pulse 4.6s ease-in-out infinite; }
+/* Poussière d'étoiles : quelques points fixes semés autour du système. */
+.ratio-orbit:before { content:''; position:absolute; top:50%; left:50%; width:2px; height:2px; border-radius:50%; background:transparent; box-shadow:-209px -58px 0 rgba(255,120,132,.5),165px -75px 0 rgba(255,120,132,.42),-111px 72px 0 rgba(255,120,132,.34),208px 45px 0 rgba(255,120,132,.46),-36px -92px 0 rgba(255,120,132,.28),84px 87px 0 rgba(255,120,132,.36); }
+@keyframes ratio-spin { to { transform:rotate(360deg); } }
+@keyframes ratio-pulse { 0%,100% { opacity:.85; transform:scale(1); } 50% { opacity:1; transform:scale(1.14); } }
+
+/* ---------- En-tête ---------- */
+.ratio-panel>.panel-heading { min-height:0; padding:20px 20px 16px; }
+.ratio-panel>.panel-heading .panel-kicker { margin-bottom:9px; color:#ff4054; font-size:9.5px; letter-spacing:1.8px; }
+.ratio-panel>.panel-heading h2 { font-size:27px; font-weight:800; letter-spacing:-1.2px; }
+.ratio-panel>.panel-heading h2:after { width:38px; height:2.5px; margin-top:11px; border-radius:3px; background:linear-gradient(90deg,#ff4054,#8c1a26); box-shadow:0 0 12px rgba(255,64,84,.7); }
+.ratio-panel>.panel-heading .lead { max-width:430px; margin-top:12px; color:#a6a1a3; font-size:11.5px; line-height:1.7; }
+.ratio-panel>.panel-heading .cta-button { align-self:flex-start; margin:0; padding:10px 14px; border:1px solid rgba(255,64,84,.45); border-radius:9px; color:#ff4054; background:linear-gradient(180deg,rgba(255,64,84,.06),rgba(255,64,84,.14)); font-size:11px; font-weight:700; box-shadow:inset 0 -14px 22px -16px rgba(255,64,84,.8); transition:border-color .2s,box-shadow .2s,background .2s; }
+.ratio-panel>.panel-heading .cta-button:hover { border-color:#ff4054; background:linear-gradient(180deg,rgba(255,64,84,.1),rgba(255,64,84,.22)); box-shadow:inset 0 -14px 22px -14px rgba(255,64,84,.9),0 0 24px rgba(255,64,84,.24); }
+.ratio-panel>.panel-heading .cta-button svg { transition:transform .2s; }
+.ratio-panel>.panel-heading .cta-button:hover svg { transform:translateX(4px); }
+
+/* ---------- Grille ---------- */
+.ratio-panel .ratio-table-head,.ratio-panel .ratio-row { grid-template-columns:minmax(0,1.9fr) .58fr .88fr minmax(0,1.85fr) 46px; gap:13px; align-items:center; }
+.ratio-panel .ratio-table-head { position:relative; z-index:1; margin:0 18px; padding:11px 14px; border-top:1px solid rgba(255,255,255,.07); border-bottom:1px solid rgba(255,255,255,.05); color:#8c9095; font:600 9px Manrope,Arial,sans-serif; letter-spacing:1.1px; }
+.ratio-panel .ratio-table { padding:10px 18px 0; }
+
+.ratio-panel .ratio-row { position:relative; overflow:hidden; min-height:62px; margin-bottom:6px; padding:9px 14px; border:1px solid rgba(255,255,255,.06); border-radius:12px; background:linear-gradient(180deg,rgba(255,255,255,.022),rgba(255,255,255,.005)); transition:border-color .2s,background .2s; }
+.ratio-panel .ratio-table>.ratio-row:last-child { border:1px solid rgba(255,255,255,.06); }
+/* Liseré d'accent révélé au survol, comme sur la table des pièces. */
+.ratio-panel .ratio-row:after { content:''; position:absolute; top:0; bottom:0; left:0; width:3px; opacity:0; background:linear-gradient(180deg,#ff5364,#96202d); box-shadow:0 0 14px rgba(255,64,84,.6); transition:opacity .2s; }
+.ratio-panel .ratio-row:hover { border-color:rgba(255,92,106,.3); background:linear-gradient(90deg,rgba(255,64,84,.07),rgba(255,255,255,.012) 46%); }
+.ratio-panel .ratio-row:hover:after { opacity:1; }
+
+.ratio-panel .ratio-name { gap:11px; min-width:0; }
+.ratio-panel .ratio-icon { width:36px; height:36px; border-radius:50%; border:1px solid rgba(255,92,106,.2); background:radial-gradient(circle at 34% 26%,rgba(180,48,63,.5),rgba(52,14,20,.82) 70%); box-shadow:inset 0 1px rgba(255,255,255,.05); transition:box-shadow .2s,border-color .2s; }
+.ratio-panel .ratio-row:hover .ratio-icon { border-color:rgba(255,92,106,.48); box-shadow:0 0 22px rgba(255,52,72,.3),inset 0 1px rgba(255,255,255,.08); }
+.ratio-panel .ratio-icon.warn { border-color:rgba(255,164,33,.28); background:radial-gradient(circle at 34% 26%,rgba(168,110,20,.46),rgba(46,32,12,.82) 70%); }
+.ratio-panel .ratio-name b { color:#f4f0f1; font-size:12.5px; font-weight:600; letter-spacing:-.2px; }
+.ratio-panel .ratio-name small { margin-top:3px; color:#8e8a8c; font-size:10px; }
+.ratio-panel .ratio-value { color:#faf9fa; font:700 16px/1.2 Manrope,Arial,sans-serif; letter-spacing:-.5px; }
+
+/* ---------- Pilule de niveau ---------- */
+.ratio-panel .ratio-table em { gap:8px; padding:7px 11px; border:1px solid transparent; border-radius:9px; font-size:11px; font-weight:500; }
+.ratio-panel .ratio-table em i { width:6px; height:6px; }
+.ratio-panel .ratio-table em.good { color:#e6fbf1; background:rgba(69,215,154,.1); border-color:rgba(69,215,154,.3); }
+.ratio-panel .ratio-table em.good i { background:#45d79a; box-shadow:0 0 9px #45d79a; }
+.ratio-panel .ratio-table em.warn { color:#fdf0dd; background:rgba(255,164,33,.1); border-color:rgba(255,164,33,.32); }
+.ratio-panel .ratio-table em.warn i { background:#ffa421; box-shadow:0 0 9px #ffa421; }
+.ratio-panel .ratio-table em.bad { color:#ffdfe3; background:rgba(255,64,84,.13); border-color:rgba(255,64,84,.42); }
+.ratio-panel .ratio-table em.bad i { background:#ff4054; box-shadow:0 0 10px #ff4054; }
+
+/* ---------- Jauge d'évaluation ---------- */
+.ratio-panel .ratio-eval { gap:12px; }
+.ratio-panel .ratio-track { overflow:visible; height:6px; border-radius:5px; background:rgba(255,255,255,.07); box-shadow:inset 0 1px 2px rgba(0,0,0,.5); }
+.ratio-panel .ratio-track i { position:relative; transition:width .5s cubic-bezier(.4,0,.2,1); }
+/* Pointe lumineuse en bout de jauge. */
+.ratio-panel .ratio-track i:after { content:''; position:absolute; top:50%; right:0; width:6px; height:6px; margin-top:-3px; border-radius:50%; background:currentColor; box-shadow:0 0 10px currentColor; }
+.ratio-panel .ratio-track i.good { background:linear-gradient(90deg,#2aa877,#45d79a); }
+.ratio-panel .ratio-track i.warn { background:linear-gradient(90deg,#c67a12,#ffa421); }
+.ratio-panel .ratio-track i.bad { background:linear-gradient(90deg,#a5162a,#ff4054); }
+.ratio-panel .ratio-scale { margin-top:6px; color:#7f7b7d; font:9px 'DM Mono',monospace; letter-spacing:0; }
+.ratio-panel .ratio-threshold { color:#c3bdbf; font:10.5px 'DM Mono',monospace; letter-spacing:-.3px; }
+
+/* ---------- Tendance ---------- */
+.ratio-panel .ratio-trend { width:36px; height:36px; border:1px solid rgba(255,64,84,.26); border-radius:10px; background:rgba(255,64,84,.06); box-shadow:inset 0 1px rgba(255,255,255,.04); transition:border-color .2s,box-shadow .2s; }
+.ratio-panel .ratio-row:hover .ratio-trend { border-color:rgba(255,64,84,.55); box-shadow:0 0 18px rgba(255,64,84,.22),inset 0 1px rgba(255,255,255,.06); }
+.ratio-panel .ratio-trend.warn { border-color:rgba(255,164,33,.32); background:rgba(255,164,33,.07); }
+.ratio-panel .ratio-row:hover .ratio-trend.warn { border-color:rgba(255,164,33,.6); box-shadow:0 0 18px rgba(255,164,33,.2),inset 0 1px rgba(255,255,255,.06); }
+
+/* ---------- Pied ---------- */
+.ratio-panel>.ratio-footer { justify-content:space-between; margin:12px 18px 0; padding:12px 15px; border:1px solid rgba(255,92,106,.22); border-radius:11px; background:linear-gradient(100deg,rgba(255,64,84,.09),rgba(255,255,255,.012) 52%,rgba(255,64,84,.06)); color:#a8a3a5; font-size:10.5px; }
+.ratio-panel>.ratio-footer:after { content:none; }
+.ratio-panel>.ratio-footer>div:last-child { margin-right:0; color:#c3bdbf; }
+.ratio-panel .ratio-footer svg { color:#ff4054; }
+.ratio-na { color:#4f4749; }
+
+@media(max-width:1100px) {
+  .ratio-orbit { right:-40px; opacity:.5; }
+  .ratio-panel>.panel-heading h2 { font-size:28px; }
+}
+@media(max-width:760px) {
+  .ratio-orbit { display:none; }
+  .ratio-panel .ratio-table-head,.ratio-panel .ratio-row { grid-template-columns:minmax(0,1.5fr) .7fr .9fr; gap:12px; }
+  .ratio-panel .ratio-table-head { margin:0 12px; }
+  .ratio-panel .ratio-table { padding:12px 12px 0; }
+  .ratio-panel>.ratio-footer { flex-direction:column; align-items:flex-start; gap:10px; margin:14px 12px 0; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .ratio-orbit i,.ratio-orbit-core { animation:none; }
+}
+
+/* ==================================================================
+   Radar du risque crédit — la page des agents repasse sur la charte
+   rouge (elle était la dernière à porter du vert/turquoise).
+   ================================================================== */
+/* Pastille du secteur : violet hérité remplacé par l'accent de la charte. */
+.sector { padding:7px 11px; border:1px solid rgba(255,92,106,.24); border-radius:8px; color:#ff8a94; background:rgba(255,64,84,.07); font-size:10px; }
+.radar text { fill:#8e8a8c; }
+
+/* ---------- Écran d'attente : instrument d'analyse ---------- */
+.agent-thinking { position:relative; overflow:hidden; display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; gap:52px; margin-bottom:17px; padding:44px 48px; border:1px solid rgba(255,92,106,.16); border-radius:20px; background:radial-gradient(ellipse 60% 90% at 20% 50%,rgba(150,26,40,.22),transparent 62%),linear-gradient(168deg,#13100f 0%,#08090b 54%,#100a0d 100%); box-shadow:inset 0 1px rgba(255,255,255,.03),0 26px 60px rgba(0,0,0,.34); text-align:left; }
+
+/* Trame technique, éteinte sur les bords pour ne pas cerner le panneau. */
+.agent-thinking-grid { position:absolute; inset:0; background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px); background-size:36px 36px; -webkit-mask:radial-gradient(ellipse 62% 78% at 19% 50%,#000 12%,transparent 76%); mask:radial-gradient(ellipse 62% 78% at 19% 50%,#000 12%,transparent 76%); }
+
+/* Équerres de cadrage : le panneau se lit comme une visée, pas comme une carte. */
+.agent-hud { position:absolute; width:20px; height:20px; border:1px solid rgba(255,64,84,.45); }
+.agent-hud--tl { top:15px; left:15px; border-right:0; border-bottom:0; border-radius:6px 0 0 0; }
+.agent-hud--tr { top:15px; right:15px; border-left:0; border-bottom:0; border-radius:0 6px 0 0; }
+.agent-hud--bl { bottom:15px; left:15px; border-right:0; border-top:0; border-radius:0 0 0 6px; }
+.agent-hud--br { bottom:15px; right:15px; border-left:0; border-top:0; border-radius:0 0 6px 0; }
+
+/* ---------- Scanner ---------- */
+.agent-scanner { position:relative; z-index:1; width:236px; height:236px; }
+.agent-scanner>* { position:absolute; top:50%; left:50%; }
+
+/* Balayage radar : un secteur qui s'estompe, masqué en couronne. */
+.agent-scanner-sweep { width:236px; height:236px; margin:-118px 0 0 -118px; border-radius:50%; background:conic-gradient(from 0deg,rgba(255,64,84,.34) 0deg,rgba(255,64,84,.1) 26deg,transparent 68deg); -webkit-mask:radial-gradient(farthest-side,transparent 34%,#000 36%,#000 99%,transparent 100%); mask:radial-gradient(farthest-side,transparent 34%,#000 36%,#000 99%,transparent 100%); animation:scan-spin 3.6s linear infinite; }
+/* Graduations : 72 traits, un tous les 5°. */
+.agent-scanner-ticks { width:236px; height:236px; margin:-118px 0 0 -118px; border-radius:50%; background:repeating-conic-gradient(from 0deg,rgba(255,120,132,.5) 0deg .55deg,transparent .55deg 5deg); -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 7px),#000 calc(100% - 7px)); mask:radial-gradient(farthest-side,transparent calc(100% - 7px),#000 calc(100% - 7px)); }
+.agent-scanner-ring { border:1px solid rgba(255,64,84,.16); border-radius:50%; }
+.agent-scanner-ring:nth-of-type(3) { width:186px; height:186px; margin:-93px 0 0 -93px; }
+.agent-scanner-ring:nth-of-type(4) { width:136px; height:136px; margin:-68px 0 0 -68px; border-color:rgba(255,64,84,.1); }
+
+.agent-brain-orb { z-index:2; display:grid; place-items:center; width:84px; height:84px; margin:-42px 0 0 -42px; border-radius:50%; color:#fff; background:radial-gradient(circle at 34% 26%,#ff9aa2 0%,#f6394c 44%,#7c1523 100%); box-shadow:0 0 42px rgba(255,64,84,.45),inset 0 2px rgba(255,255,255,.32); animation:brain-breathe 3.2s ease-in-out infinite; }
+/* Reflet fixe : l'orbe reste une sphère éclairée, pas un disque plat. */
+.agent-brain-orb:after { content:''; position:absolute; top:9px; left:16px; width:34px; height:22px; border-radius:50%; background:radial-gradient(ellipse,rgba(255,255,255,.42),transparent 70%); }
+
+.agent-brain-ping { width:96px; height:96px; margin:-48px 0 0 -48px; border:1px solid rgba(255,64,84,.5); border-radius:50%; opacity:0; animation:brain-ping 3.4s cubic-bezier(.2,.7,.4,1) infinite; }
+.agent-brain-ping:nth-of-type(6) { animation-delay:1.7s; }
+
+.agent-brain-arc { z-index:1; width:136px; height:136px; margin:-68px 0 0 -68px; border-radius:50%; background:conic-gradient(from 0deg,transparent 0 52%,rgba(255,64,84,.12) 68%,#ff4054 93%,transparent 100%); -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 2.5px),#000 calc(100% - 2.5px)); mask:radial-gradient(farthest-side,transparent calc(100% - 2.5px),#000 calc(100% - 2.5px)); animation:brain-spin 2.6s linear infinite; }
+
+/* Satellites : anneaux invisibles qui promènent leur point. */
+.agent-scanner b { display:block; border-radius:50%; animation:brain-spin linear infinite; }
+.agent-scanner b:after { content:''; position:absolute; top:50%; right:-3px; width:6px; height:6px; margin-top:-3px; border-radius:50%; background:#ff5364; box-shadow:0 0 10px #ff4054,0 0 22px rgba(255,64,84,.55); }
+.agent-scanner b:nth-of-type(1) { width:186px; height:118px; margin:-59px 0 0 -93px; animation-duration:7s; }
+.agent-scanner b:nth-of-type(2) { width:132px; height:180px; margin:-90px 0 0 -66px; animation-duration:5.2s; animation-direction:reverse; }
+.agent-scanner b:nth-of-type(3) { width:164px; height:96px; margin:-48px 0 0 -82px; animation-duration:9.5s; }
+
+/* ---------- Colonne de texte ---------- */
+.agent-thinking-body { position:relative; z-index:1; min-width:0; }
+.agent-thinking .panel-kicker,.agent-halt .panel-kicker { display:flex; align-items:center; gap:9px; margin:0 0 12px; font-size:9.5px; letter-spacing:2px; }
+.agent-thinking .panel-kicker i { width:7px; height:7px; border-radius:50%; background:#ff4054; box-shadow:0 0 10px #ff4054,0 0 22px rgba(255,64,84,.55); animation:doc-live 2.4s ease-in-out infinite; }
+.agent-thinking h2 { margin:0; font-size:27px; font-weight:800; letter-spacing:-1.2px; }
+.agent-thinking h2:after { content:''; display:block; width:38px; height:2.5px; margin-top:13px; border-radius:3px; background:linear-gradient(90deg,#ff4054,#8c1a26); box-shadow:0 0 12px rgba(255,64,84,.7); }
+.agent-thinking-body>p { max-width:520px; margin:15px 0 0; color:#a6a1a3; font-size:12px; line-height:1.75; }
+
+/* Étapes numérotées : la portée de l'analyse, sans prétendre à un avancement. */
+.agent-thinking-steps { display:flex; flex-wrap:wrap; gap:8px; margin-top:22px; }
+.agent-thinking-steps span { display:flex; align-items:center; gap:10px; padding:9px 14px 9px 11px; border:1px solid rgba(255,255,255,.07); border-radius:9px; color:#b3aeb0; background:linear-gradient(180deg,rgba(255,255,255,.026),rgba(255,255,255,.006)); font-size:11px; }
+.agent-thinking-steps em { padding:3px 6px; border-radius:5px; color:#ff8a94; background:rgba(255,64,84,.11); font:600 9.5px 'DM Mono',monospace; font-style:normal; }
+
+.agent-thinking-bar { position:relative; overflow:hidden; width:100%; max-width:420px; height:3px; margin:26px 0 14px; border-radius:3px; background:rgba(255,255,255,.07); }
+.agent-thinking-bar i { position:absolute; inset:0 auto 0 0; width:34%; border-radius:3px; background:linear-gradient(90deg,transparent,#ff4054,transparent); box-shadow:0 0 12px rgba(255,64,84,.55); animation:brain-sweep 1.9s ease-in-out infinite; }
+
+.agent-thinking-meta { display:flex; flex-wrap:wrap; align-items:center; gap:11px; color:#7f7b7d; font:10.5px 'DM Mono',monospace; letter-spacing:.4px; }
+.agent-thinking-meta i { width:3px; height:3px; border-radius:50%; background:rgba(255,64,84,.5); }
+.agent-thinking-meta span:first-child { color:#c3bdbf; }
+
+@keyframes scan-spin { to { transform:rotate(360deg); } }
+
+@keyframes brain-spin { to { transform:rotate(360deg); } }
+@keyframes brain-breathe {
+  0%,100% { transform:scale(1); box-shadow:0 0 42px rgba(255,64,84,.45),inset 0 2px rgba(255,255,255,.32); }
+  50% { transform:scale(1.06); box-shadow:0 0 64px rgba(255,64,84,.7),inset 0 2px rgba(255,255,255,.38); }
+}
+@keyframes brain-ping {
+  0% { opacity:.85; transform:scale(.86); }
+  100% { opacity:0; transform:scale(1.92); }
+}
+@keyframes brain-sweep {
+  0% { transform:translateX(-115%); }
+  100% { transform:translateX(365%); }
+}
+
+@media(max-width:760px) {
+  .agent-thinking { grid-template-columns:1fr; justify-items:center; gap:28px; padding:30px 18px 26px; text-align:center; }
+  .agent-thinking .panel-kicker,.agent-thinking-steps,.agent-thinking-meta { justify-content:center; }
+  .agent-thinking h2:after { margin-left:auto; margin-right:auto; }
+  .agent-scanner { width:190px; height:190px; }
+  .agent-thinking h2 { font-size:21px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .agent-brain-orb,.agent-brain-ping,.agent-brain-arc,.agent-scanner b,.agent-scanner-sweep,.agent-thinking .panel-kicker i,.agent-thinking-bar i { animation:none; }
+  .agent-brain-ping { opacity:.35; }
+  .agent-thinking-bar i { width:100%; }
+}
+
+/* ==================================================================
+   Résultats des agents — bannière, radar, signaux, contributions,
+   recommandation. Entrées en cascade au montage, puis tout se fige :
+   rien ne bouge pendant qu'on lit.
+   ================================================================== */
+
+@keyframes agent-rise { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:none; } }
+@keyframes agent-fade { from { opacity:0; } to { opacity:1; } }
+
+/* ---------- Bannière de conclusion ---------- */
+/* Filet lumineux le long du bord haut. */
+.agent-orb { position:relative; width:52px; height:52px; margin-top:2px; border-radius:16px; box-shadow:0 0 30px rgba(255,64,84,.4),inset 0 1px rgba(255,255,255,.25); }
+/* Anneau qui respire autour de l'orbe, signature visuelle des agents. */
+.agent-orb:after { content:''; position:absolute; inset:-7px; border:1px solid rgba(255,64,84,.3); border-radius:20px; animation:brain-breathe 3.6s ease-in-out infinite; }
+
+/* ---------- Cadran de l'indice de risque ---------- */
+
+/* ---------- Panneaux ---------- */
+.radar-panel,.agents-panel,.contribution-panel,.action-panel { padding:22px; border:1px solid rgba(255,255,255,.07); border-radius:18px; background:radial-gradient(ellipse at 12% -10%,rgba(140,26,38,.18),transparent 52%),linear-gradient(168deg,#131011 0%,#08090b 56%,#100a0d 100%); box-shadow:inset 0 1px rgba(255,255,255,.03),0 22px 52px rgba(0,0,0,.3); animation:agent-rise .55s cubic-bezier(.2,.7,.3,1) both; }
+.radar-panel { animation-delay:.08s; }
+.agents-panel { animation-delay:.14s; }
+.contribution-panel { animation-delay:.2s; }
+.action-panel { animation-delay:.26s; }
+.radar-panel .panel-heading h2,.agents-panel .panel-heading h2,.contribution-panel .panel-heading h2 { font-size:18px; font-weight:700; letter-spacing:-.6px; }
+.radar-panel .panel-kicker,.agents-panel .panel-kicker,.contribution-panel .panel-kicker,.action-panel .panel-kicker { margin-bottom:8px; font-size:9.5px; letter-spacing:1.8px; }
+
+/* ---------- Radar ---------- */
+.radar-wrap { height:auto; margin-top:6px; }
+.radar { max-width:330px; height:278px; }
+.radar-halo { fill:rgba(255,64,84,.045); }
+.radar-spoke { stroke:rgba(255,255,255,.07); stroke-width:1; }
+.radar-ring { stroke:rgba(255,255,255,.09); stroke-width:1; }
+.radar-ring:last-of-type { stroke:rgba(255,255,255,.14); }
+/* Le polygone se dessine, puis se remplit. */
+.radar-shape { stroke-dasharray:900; stroke-dashoffset:900; animation:radar-draw 1.3s cubic-bezier(.3,.7,.3,1) .25s forwards,agent-fade .8s ease .9s both; opacity:0; }
+@keyframes radar-draw { to { stroke-dashoffset:0; } }
+.radar-dot { fill:#ff5364; opacity:0; transform-box:fill-box; transform-origin:center; animation:radar-pop .45s cubic-bezier(.2,1.4,.4,1) both; }
+@keyframes radar-pop { from { opacity:0; transform:scale(0); } to { opacity:1; transform:scale(1); } }
+.radar-label { fill:#a29e9f; font:600 10px Manrope,Arial,sans-serif; }
+
+/* ---------- Signaux détectés ---------- */
+.agents-panel .signal-row { gap:13px; margin-top:8px; padding:14px 14px; border:1px solid rgba(255,255,255,.06); border-bottom:1px solid rgba(255,255,255,.06); border-radius:12px; background:linear-gradient(180deg,rgba(255,255,255,.022),rgba(255,255,255,.005)); transition:border-color .2s,background .2s; animation:agent-rise .5s cubic-bezier(.2,.7,.3,1) both; animation-delay:calc(.28s + var(--i,0) * .09s); }
+.agents-panel .signal-row:hover { border-color:rgba(255,92,106,.3); background:linear-gradient(90deg,rgba(255,64,84,.07),rgba(255,255,255,.012) 52%); }
+.agents-panel .signal-row b { color:#f4f0f1; font-size:12.5px; font-weight:600; }
+.agents-panel .signal-row small { margin-top:3px; color:#8e8a8c; font-size:10.5px; }
+.agents-panel .signal-row strong { font:700 21px/1 Manrope,Arial,sans-serif; letter-spacing:-1px; }
+.agents-panel .text-button { margin-top:16px; }
+.agents-panel .text-button svg { transition:transform .2s; }
+.agents-panel .text-button:hover svg { transform:translateX(4px); }
+
+/* ---------- Contributions ---------- */
+.contribution { min-height:38px; margin-top:6px; color:#b3aeb0; font-size:11.5px; }
+.contribution>div { height:8px; border-radius:6px; background:rgba(255,255,255,.07); box-shadow:inset 0 1px 2px rgba(0,0,0,.5); }
+/* La barre pousse depuis la gauche : la largeur reste celle des données. */
+.contribution i { transform-origin:left center; box-shadow:0 0 10px currentColor; animation:contrib-grow .75s cubic-bezier(.2,.7,.3,1) both; animation-delay:calc(.34s + var(--i,0) * .07s); }
+.contribution i.high { color:#ff4054; background:linear-gradient(90deg,#a5162a,#ff4054); }
+.contribution i.medium { color:#ffa421; background:linear-gradient(90deg,#c67a12,#ffa421); }
+.contribution i.positive { color:#d7d2d4; background:linear-gradient(90deg,#8a8486,#e8e3e5); }
+.contribution b { font:600 12px 'DM Mono',monospace; }
+.contribution b.high { color:#ff5364; }
+@keyframes contrib-grow { from { transform:scaleX(0); } to { transform:scaleX(1); } }
+
+/* ---------- Recommandation ---------- */
+.action-panel h2 { margin:10px 0 0; font-size:26px; font-weight:800; letter-spacing:-1.1px; }
+.action-panel h2:after { content:''; display:block; width:38px; height:2.5px; margin-top:12px; border-radius:3px; background:linear-gradient(90deg,#ff4054,#8c1a26); box-shadow:0 0 12px rgba(255,64,84,.7); }
+.action-panel p { margin-top:14px; color:#a6a1a3; font-size:11.5px; line-height:1.8; }
+.action-list { gap:8px; margin:18px 0; }
+.action-list span { gap:11px; padding:11px 13px; border:1px solid rgba(255,255,255,.06); border-radius:11px; color:#cfc9cb; background:linear-gradient(180deg,rgba(255,255,255,.022),rgba(255,255,255,.005)); font-size:11.5px; }
+.action-list span svg { flex-shrink:0; padding:4px; border-radius:50%; color:#ff4054; background:rgba(255,64,84,.1); box-shadow:inset 0 0 0 1px rgba(255,92,106,.22); box-sizing:content-box; }
+.action-panel .primary-button { padding:14px; border-radius:11px; background:linear-gradient(180deg,#ff5364,#e02a3d); font-size:12px; box-shadow:0 10px 24px rgba(226,42,60,.28),inset 0 1px rgba(255,255,255,.24); transition:box-shadow .2s,transform .2s; }
+.action-panel .primary-button:hover { box-shadow:0 12px 30px rgba(226,42,60,.42),inset 0 1px rgba(255,255,255,.3); transform:translateY(-1px); }
+.action-panel .primary-button svg { transition:transform .2s; }
+.action-panel .primary-button:hover svg { transform:translateX(4px); }
+
+/* ---------- Pastille d'état ---------- */
+.live-pill { padding:10px 14px; border:1px solid rgba(255,92,106,.3); border-radius:10px; background:rgba(255,64,84,.07); font-size:11.5px; font-weight:600; }
+.live-pill i { animation:doc-live 2.4s ease-in-out infinite; }
+
+@media(max-width:760px) {
+}
+@media(prefers-reduced-motion:reduce) {
+  .agent-orb:after,.live-pill i { animation:none; }
+  .radar-shape { animation:none; opacity:1; stroke-dashoffset:0; }
+  .radar-dot { animation:none; opacity:1; }
+  .contribution i { animation:none; }
+}
+
+/* ==================================================================
+   Guide de la plateforme.
+   ================================================================== */
+@keyframes guide-rise { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
+
+/* Entrée du guide dans la sidebar (l'ancien bloc n'était pas cliquable). */
+.sidebar-bottom { width:calc(100% - 24px); align-items:center; gap:11px; margin:auto 12px 4px; padding:10px 11px; border:1px solid rgba(255,255,255,.06); border-radius:11px; background:rgba(255,255,255,.016); text-align:left; transition:border-color .2s,background .2s; }
+.sidebar-bottom:hover { border-color:rgba(255,92,106,.26); background:rgba(255,64,84,.05); }
+.sidebar-bottom.is-active { border-color:rgba(255,92,106,.36); background:linear-gradient(90deg,rgba(255,64,84,.13),rgba(255,64,84,.03)); }
+/* styles.css met tous les span du bloc en display:block : sans ce sélecteur
+   plus spécifique, la tuile perd son centrage. */
+.sidebar-bottom .help-icon { display:grid; flex-shrink:0; place-items:center; width:32px; height:32px; border:1px solid rgba(255,92,106,.2); border-radius:9px; color:#ff4054; background:rgba(255,64,84,.07); transition:border-color .2s,background .2s; }
+.sidebar-bottom:hover .help-icon,.sidebar-bottom.is-active .help-icon { border-color:rgba(255,92,106,.45); background:rgba(255,64,84,.14); }
+.help-text { min-width:0; }
+.sidebar-bottom b { display:block; margin-bottom:2px; color:#dcd7d9; font-size:12px; font-weight:600; letter-spacing:-.2px; }
+.sidebar-bottom .help-text span { color:#7f7b7d; font-size:10.5px; }
+.sidebar-bottom.is-active b { color:#ff8a94; }
+
+/* ---------- Le parcours d'un dossier ---------- */
+.guide-flow { position:relative; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; margin-bottom:34px; }
+/* Le rail passe derrière les cartes, à hauteur des pastilles. */
+.guide-flow-rail { position:absolute; top:52px; right:60px; left:60px; height:1px; overflow:hidden; background:linear-gradient(90deg,rgba(255,64,84,.28),rgba(255,64,84,.1)); }
+.guide-flow-rail i { position:absolute; top:0; left:0; width:22%; height:100%; background:linear-gradient(90deg,transparent,#ff4054,transparent); animation:guide-pulse 4.2s ease-in-out infinite; }
+@keyframes guide-pulse { 0% { transform:translateX(-110%); } 100% { transform:translateX(560%); } }
+
+.guide-step { position:relative; z-index:1; padding:22px 20px; border:1px solid rgba(255,255,255,.07); border-radius:16px; background:radial-gradient(ellipse at 22% -8%,rgba(140,26,38,.2),transparent 54%),linear-gradient(168deg,#131011 0%,#08090b 58%,#100a0d 100%); box-shadow:inset 0 1px rgba(255,255,255,.03),0 20px 46px rgba(0,0,0,.3); transition:border-color .2s,transform .2s; animation:guide-rise .5s cubic-bezier(.2,.7,.3,1) both; animation-delay:calc(var(--i,0) * .09s); }
+.guide-step:hover { border-color:rgba(255,92,106,.3); transform:translateY(-3px); }
+.guide-step-icon { display:grid; place-items:center; width:44px; height:44px; border-radius:14px; color:#ff4054; border:1px solid rgba(255,92,106,.22); background:radial-gradient(circle at 34% 26%,rgba(180,48,63,.5),rgba(52,14,20,.85) 70%); box-shadow:0 0 20px rgba(255,52,72,.18),inset 0 1px rgba(255,255,255,.06); }
+.guide-step-kicker { display:block; margin:18px 0 7px; color:#ff4054; font:600 9px 'DM Mono',monospace; letter-spacing:1.8px; }
+.guide-step h3 { margin:0; color:#f4f0f1; font-size:15px; font-weight:700; letter-spacing:-.4px; }
+.guide-step p { margin:9px 0 0; color:#948f91; font-size:11.5px; line-height:1.7; }
+
+/* ---------- Sections ---------- */
+.guide-section { margin-bottom:34px; }
+.guide-section-head { margin-bottom:18px; }
+.guide-section-head .panel-kicker { margin-bottom:9px; font-size:9.5px; letter-spacing:1.8px; }
+.guide-section-head h2 { margin:0; font-size:25px; font-weight:800; letter-spacing:-1.1px; }
+.guide-section-head h2:after { content:''; display:block; width:36px; height:2.5px; margin-top:11px; border-radius:3px; background:linear-gradient(90deg,#ff4054,#8c1a26); box-shadow:0 0 12px rgba(255,64,84,.7); }
+.guide-section-head .lead { max-width:620px; margin-top:13px; color:#a6a1a3; font-size:12px; line-height:1.75; }
+.guide-section-head .lead b { color:#ded8da; font-weight:600; }
+
+/* ---------- Services ---------- */
+.guide-services { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+.guide-service { display:flex; gap:14px; padding:18px; border:1px solid rgba(255,255,255,.07); border-radius:14px; background:linear-gradient(180deg,rgba(255,255,255,.022),rgba(255,255,255,.005)); transition:border-color .2s,background .2s; animation:guide-rise .5s cubic-bezier(.2,.7,.3,1) both; animation-delay:calc(.1s + var(--i,0) * .07s); }
+.guide-service:hover { border-color:rgba(255,92,106,.28); background:linear-gradient(90deg,rgba(255,64,84,.06),rgba(255,255,255,.01) 56%); }
+.guide-service-icon { display:grid; flex-shrink:0; place-items:center; width:38px; height:38px; border-radius:50%; color:#ff4054; border:1px solid rgba(255,92,106,.18); background:radial-gradient(circle at 36% 30%,rgba(255,64,84,.16),rgba(255,64,84,.03) 70%); }
+.guide-service b { display:flex; align-items:baseline; gap:9px; color:#f4f0f1; font:600 12.5px 'DM Mono',monospace; letter-spacing:-.3px; }
+.guide-service em { padding:2px 7px; border-radius:5px; color:#ff8a94; background:rgba(255,64,84,.1); font:600 10px 'DM Mono',monospace; font-style:normal; }
+.guide-service p { margin:7px 0 0; color:#948f91; font-size:11.5px; line-height:1.65; }
+
+/* ---------- Familles d'indicateurs ---------- */
+.guide-families { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; }
+.guide-family { padding:18px; border:1px solid rgba(255,255,255,.07); border-radius:14px; background:linear-gradient(180deg,rgba(255,255,255,.022),rgba(255,255,255,.005)); animation:guide-rise .5s cubic-bezier(.2,.7,.3,1) both; animation-delay:calc(.1s + var(--i,0) * .07s); }
+.guide-family-head { display:flex; align-items:center; gap:11px; padding-bottom:14px; margin-bottom:14px; border-bottom:1px solid rgba(255,255,255,.06); }
+.guide-family-icon { display:grid; flex-shrink:0; place-items:center; width:32px; height:32px; border-radius:50%; color:#ff4054; border:1px solid rgba(255,92,106,.18); background:rgba(255,64,84,.07); }
+.guide-family-head b { flex:1; color:#f4f0f1; font-size:13px; font-weight:600; letter-spacing:-.2px; }
+.guide-family-head em { padding:3px 9px; border-radius:20px; color:#c3bdbf; background:rgba(255,255,255,.06); font:600 10px 'DM Mono',monospace; font-style:normal; }
+
+/* ---------- FAQ ---------- */
+.guide-faq { display:grid; gap:8px; }
+.guide-faq-item { overflow:hidden; border:1px solid rgba(255,255,255,.07); border-radius:14px; background:linear-gradient(180deg,rgba(255,255,255,.022),rgba(255,255,255,.005)); transition:border-color .2s; }
+.guide-faq-item.is-open { border-color:rgba(255,92,106,.3); }
+.guide-faq-item>button { display:flex; align-items:center; justify-content:space-between; gap:16px; width:100%; padding:17px 18px; border:0; color:#eae5e7; background:none; text-align:left; font-size:12.5px; font-weight:600; letter-spacing:-.2px; }
+.guide-faq-item.is-open>button { color:#ff8a94; }
+/* Chevron dessiné en CSS : deux traits qui pivotent à l'ouverture. */
+.guide-faq-item>button i { position:relative; flex-shrink:0; width:11px; height:11px; transition:transform .25s; }
+.guide-faq-item>button i:before,.guide-faq-item>button i:after { content:''; position:absolute; top:5px; width:8px; height:1.5px; border-radius:2px; background:currentColor; }
+.guide-faq-item>button i:before { left:0; transform:rotate(45deg); }
+.guide-faq-item>button i:after { right:0; transform:rotate(-45deg); }
+.guide-faq-item.is-open>button i { transform:rotate(180deg); }
+/* 0fr → 1fr : la hauteur s'anime sans avoir à la mesurer. */
+.guide-faq-body { display:grid; grid-template-rows:0fr; transition:grid-template-rows .28s cubic-bezier(.3,.7,.3,1); }
+.guide-faq-item.is-open .guide-faq-body { grid-template-rows:1fr; }
+.guide-faq-body p { overflow:hidden; margin:0; padding:0 18px; color:#a6a1a3; font-size:11.5px; line-height:1.8; }
+.guide-faq-item.is-open .guide-faq-body p { padding-bottom:18px; }
+
+/* ---------- Raccourcis ---------- */
+.guide-shortcuts { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+.guide-shortcut { display:grid; grid-template-columns:auto 1fr auto; grid-template-rows:auto auto; column-gap:14px; align-items:center; padding:18px; border:1px solid rgba(255,92,106,.18); border-radius:14px; color:inherit; background:radial-gradient(ellipse at 14% -20%,rgba(140,26,38,.22),transparent 56%),linear-gradient(168deg,#131011 0%,#08090b 60%,#100a0d 100%); text-align:left; transition:border-color .2s,transform .2s,box-shadow .2s; }
+.guide-shortcut:hover { border-color:rgba(255,64,84,.5); transform:translateY(-3px); box-shadow:0 18px 36px rgba(0,0,0,.34),0 0 24px rgba(255,64,84,.14); }
+.guide-shortcut-icon { grid-row:1 / span 2; display:grid; place-items:center; width:42px; height:42px; border-radius:13px; color:#ff4054; border:1px solid rgba(255,92,106,.22); background:radial-gradient(circle at 34% 26%,rgba(180,48,63,.5),rgba(52,14,20,.85) 70%); }
+.guide-shortcut b { color:#f4f0f1; font-size:13px; font-weight:600; letter-spacing:-.3px; }
+.guide-shortcut small { grid-column:2; color:#8e8a8c; font-size:11px; }
+.guide-shortcut>svg { grid-row:1 / span 2; color:#ff4054; transition:transform .2s; }
+.guide-shortcut:hover>svg { transform:translateX(4px); }
+
+@media(max-width:1100px) {
+  .guide-flow { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .guide-flow-rail { display:none; }
+  .guide-shortcuts { grid-template-columns:1fr; }
+}
+@media(max-width:760px) {
+  .guide-flow,.guide-services { grid-template-columns:1fr; }
+  .guide-section-head h2 { font-size:21px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .guide-flow-rail i,.guide-step,.guide-service,.guide-family { animation:none; }
+  .guide-step:hover,.guide-shortcut:hover { transform:none; }
+}
+
+/* ---------- Guide : familles d'indicateurs (refonte) ---------- */
+/* Bandeau de comptage, entièrement dérivé de RATIO_DEFS. */
+.guide-stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1px; margin-bottom:16px; overflow:hidden; border:1px solid rgba(255,255,255,.07); border-radius:14px; background:rgba(255,255,255,.06); }
+.guide-stats>div { padding:16px 18px; background:linear-gradient(180deg,#131011,#0a0a0c); }
+.guide-stats strong { display:block; color:#faf9fa; font:700 25px/1 Manrope,Arial,sans-serif; letter-spacing:-1.2px; }
+.guide-stats span { display:block; margin-top:6px; color:#8e8a8c; font-size:11px; }
+
+/* align-items:start — sinon une famille de 5 lignes étire toute la rangée
+   et laisse un vide sous celles qui en ont 3. */
+.guide-families { grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); align-items:start; gap:14px; }
+.guide-family { padding:0; overflow:hidden; border-radius:16px; background:radial-gradient(ellipse at 22% -10%,rgba(140,26,38,.18),transparent 56%),linear-gradient(168deg,#131011 0%,#08090b 60%,#100a0d 100%); box-shadow:inset 0 1px rgba(255,255,255,.03),0 18px 40px rgba(0,0,0,.28); transition:border-color .2s; }
+.guide-family:hover { border-color:rgba(255,92,106,.26); }
+.guide-family-head { gap:11px; margin:0; padding:15px 16px; border-bottom:1px solid rgba(255,255,255,.06); background:linear-gradient(180deg,rgba(255,255,255,.028),transparent); }
+.guide-family-icon { width:30px; height:30px; }
+.guide-family-head b { font-size:12.5px; }
+.guide-family-head em { padding:3px 8px; font-size:9.5px; }
+
+.guide-metrics { display:block; margin:0; padding:6px 8px 8px; list-style:none; }
+.guide-metrics li { position:relative; display:flex; align-items:baseline; justify-content:space-between; gap:12px; padding:9px 10px 9px 18px; border-radius:8px; transition:background .18s; }
+.guide-metrics li:hover { background:rgba(255,255,255,.03); }
+/* Toutes les lignes portent un marqueur : plein et rouge pour les
+   indicateurs affichés d'office, creux et éteint pour les autres. Un point
+   présent une fois sur trois se lit comme un accident, deux états du même
+   signe se lisent comme une information. */
+.guide-metrics li:before { content:''; position:absolute; top:calc(50% - 3px); left:5px; width:6px; height:6px; border:1.5px solid rgba(255,255,255,.22); border-radius:50%; box-sizing:border-box; }
+.guide-metrics li.is-primary:before { border-color:#ff4054; background:#ff4054; box-shadow:0 0 7px #ff4054; }
+.guide-metric-name { min-width:0; color:#d8d3d5; font-size:11.5px; line-height:1.4; }
+.guide-metrics li.is-primary .guide-metric-name { color:#f4f0f1; font-weight:600; }
+.guide-metric-ref { flex-shrink:0; color:#c3bdbf; font:500 10.5px 'DM Mono',monospace; letter-spacing:-.3px; white-space:nowrap; }
+.guide-metric-ref.is-raw { color:#6c686a; font-family:Manrope,Arial,sans-serif; font-style:italic; letter-spacing:0; }
+
+.guide-legend { display:flex; flex-wrap:wrap; align-items:center; gap:7px; margin:14px 0 0; color:#7f7b7d; font-size:10.5px; }
+.guide-legend i { width:6px; height:6px; border:1.5px solid #ff4054; border-radius:50%; background:#ff4054; box-sizing:border-box; box-shadow:0 0 7px #ff4054; }
+.guide-legend i.is-muted { margin-left:14px; border-color:rgba(255,255,255,.22); background:none; box-shadow:none; }
+.guide-legend b { margin-left:14px; padding:3px 8px; border-radius:6px; color:#c3bdbf; background:rgba(255,255,255,.05); font:500 10px 'DM Mono',monospace; }
+
+@media(max-width:1100px) {
+  .guide-stats { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media(max-width:760px) {
+  .guide-stats { grid-template-columns:1fr; }
+  .guide-families { grid-template-columns:1fr; }
+}
+
+/* ---------- Radar sans données : état vide assumé ---------- */
+.radar-empty { position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:250px; padding:26px 22px; text-align:center; }
+/* Cible fantôme en pointillés : le panneau garde son identité de radar
+   tout en annonçant qu'il n'y a rien à tracer. */
+.radar-empty:before,.radar-empty:after { content:''; position:absolute; top:50%; left:50%; border:1px dashed rgba(255,255,255,.07); border-radius:50%; }
+.radar-empty:before { width:210px; height:210px; margin:-105px 0 0 -105px; }
+.radar-empty:after { width:140px; height:140px; margin:-70px 0 0 -70px; border-color:rgba(255,255,255,.045); }
+.radar-empty-mark { position:relative; display:grid; place-items:center; width:52px; height:52px; margin-bottom:18px; border-radius:50%; color:#7a5158; border:1px solid rgba(255,92,106,.16); background:radial-gradient(circle at 36% 30%,rgba(255,64,84,.1),rgba(255,64,84,.02) 70%); }
+.radar-empty b { position:relative; color:#c3bdbf; font-size:13px; font-weight:600; letter-spacing:-.3px; }
+.radar-empty small { position:relative; display:block; max-width:300px; margin-top:9px; color:#7f7b7d; font-size:11px; line-height:1.7; }
+
+/* ==================================================================
+   Analyse interrompue — même instrument que l'écran de chargement,
+   mais à l'arrêt. Les panneaux de résultats ne sont pas rendus : un
+   dossier affiché sans benchmark ni signaux se lit comme un dossier
+   sans risque, ce qui est l'inverse de la vérité.
+   ================================================================== */
+.agent-halt { position:relative; overflow:hidden; display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; gap:52px; margin-bottom:17px; padding:44px 48px; border:1px solid rgba(255,92,106,.16); border-radius:20px; background:radial-gradient(ellipse 60% 90% at 20% 50%,rgba(120,22,34,.2),transparent 62%),linear-gradient(168deg,#121011 0%,#08090b 54%,#0f0a0c 100%); box-shadow:inset 0 1px rgba(255,255,255,.03),0 26px 60px rgba(0,0,0,.34); }
+
+/* Instrument figé : le balayage s'arrête, les graduations s'éteignent. */
+.agent-scanner.is-halted { filter:saturate(.35); }
+.agent-scanner.is-halted .agent-scanner-sweep { animation:none; transform:rotate(34deg); opacity:.5; }
+.agent-scanner.is-halted .agent-scanner-ticks { opacity:.4; }
+.agent-scanner.is-halted .agent-scanner-ring { border-style:dashed; border-color:rgba(255,255,255,.09); }
+
+/* Bande de perte de signal qui traverse la visée par intermittence. */
+.agent-halt-scan { width:236px; height:236px; margin:-118px 0 0 -118px; border-radius:50%; overflow:hidden; }
+.agent-halt-scan:after { content:''; position:absolute; left:0; width:100%; height:26px; background:linear-gradient(180deg,transparent,rgba(255,64,84,.16),transparent); animation:halt-scan 4.4s cubic-bezier(.5,0,.5,1) infinite; }
+@keyframes halt-scan { 0%,72% { top:-30px; } 100% { top:236px; } }
+
+.agent-halt-orb { z-index:2; display:grid; place-items:center; width:84px; height:84px; margin:-42px 0 0 -42px; border-radius:50%; color:#ff6d7a; border:1px solid rgba(255,92,106,.26); background:radial-gradient(circle at 34% 26%,rgba(96,26,36,.95) 0%,rgba(30,14,17,.98) 62%,rgba(14,10,12,1) 100%); box-shadow:0 0 34px rgba(255,64,84,.18),inset 0 1px rgba(255,255,255,.07); animation:halt-flicker 5.2s ease-in-out infinite; }
+@keyframes halt-flicker { 0%,100% { box-shadow:0 0 34px rgba(255,64,84,.18),inset 0 1px rgba(255,255,255,.07); } 48% { box-shadow:0 0 20px rgba(255,64,84,.08),inset 0 1px rgba(255,255,255,.05); } 52% { box-shadow:0 0 44px rgba(255,64,84,.3),inset 0 1px rgba(255,255,255,.09); } }
+
+/* Le point du kicker ne pulse pas ici : plus rien ne tourne. */
+.agent-halt .panel-kicker i { background:#ff6d7a; box-shadow:0 0 10px rgba(255,109,122,.6); animation:none; }
+.agent-halt h2 { margin:0; font-size:27px; font-weight:800; letter-spacing:-1.2px; }
+.agent-halt h2:after { content:''; display:block; width:38px; height:2.5px; margin-top:13px; border-radius:3px; background:linear-gradient(90deg,#ff4054,#8c1a26); box-shadow:0 0 12px rgba(255,64,84,.7); }
+
+/* Message brut du service, présenté comme une sortie système. */
+.agent-halt-log { display:flex; align-items:flex-start; gap:11px; max-width:560px; margin:18px 0 0; padding:13px 15px; border:1px solid rgba(255,92,106,.24); border-radius:11px; background:rgba(255,64,84,.06); color:#e4dcde; font:11px/1.65 'DM Mono',monospace; letter-spacing:-.2px; }
+.agent-halt-log svg { flex-shrink:0; margin-top:2px; color:#ff6d7a; }
+.agent-halt .agent-thinking-body>p { max-width:560px; margin-top:15px; color:#8e8a8c; font-size:11.5px; line-height:1.75; }
+
+.agent-halt-actions { display:flex; flex-wrap:wrap; gap:11px; margin:22px 0 20px; }
+.agent-halt-actions .primary-button { width:max-content; margin:0; padding:12px 18px; border-radius:10px; background:linear-gradient(180deg,#ff5364,#e02a3d); font-size:12px; box-shadow:0 10px 24px rgba(226,42,60,.26),inset 0 1px rgba(255,255,255,.24); transition:box-shadow .2s,transform .2s; }
+.agent-halt-actions .primary-button:hover { box-shadow:0 12px 30px rgba(226,42,60,.4),inset 0 1px rgba(255,255,255,.3); transform:translateY(-1px); }
+.agent-halt-actions .outline-button { padding:12px 18px; border-color:rgba(255,255,255,.1); border-radius:10px; color:#c3bdbf; background:rgba(255,255,255,.02); font-size:12px; transition:border-color .2s,color .2s; }
+.agent-halt-actions .outline-button:hover { border-color:rgba(255,92,106,.4); color:#f4f0f1; }
+.agent-halt-actions .outline-button svg { color:#ff6d7a; }
+
+/* La recommandation reste seule en bas : elle occupe toute la largeur. */
+.agent-bottom--solo { grid-template-columns:1fr; }
+
+
+@media(max-width:900px) {
+  .agent-halt { grid-template-columns:1fr; justify-items:center; gap:28px; padding:30px 20px 26px; text-align:center; }
+  .agent-halt .panel-kicker,.agent-halt-actions,.agent-halt .agent-thinking-meta { justify-content:center; }
+  .agent-halt h2:after { margin-left:auto; margin-right:auto; }
+  .agent-halt-log { text-align:left; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .agent-halt-scan:after,.agent-halt-orb { animation:none; }
+}
+
+/* ---------- Signaux détectés (refonte) ---------- */
+.agents-panel .signal-row { position:relative; overflow:hidden; grid-template-columns:auto minmax(0,1fr) auto; gap:14px; align-items:center; padding:15px 16px 15px 18px; border-radius:13px; }
+/* Liseré d'accent : la gravité se lit avant même le chiffre. */
+.agents-panel .signal-row:before { content:''; position:absolute; top:0; bottom:0; left:0; width:3px; background:linear-gradient(180deg,#ff5364,#96202d); box-shadow:0 0 12px rgba(255,64,84,.45); }
+.agents-panel .signal-row[data-tone=warn]:before { background:linear-gradient(180deg,#ffb84d,#9a6516); box-shadow:0 0 12px rgba(255,164,33,.4); }
+.agents-panel .signal-row[data-tone=ok]:before { background:rgba(255,255,255,.14); box-shadow:none; }
+
+.signal-mark { display:grid; flex-shrink:0; place-items:center; width:36px; height:36px; border-radius:11px; color:#ff5364; border:1px solid rgba(255,92,106,.24); background:radial-gradient(circle at 34% 26%,rgba(180,48,63,.42),rgba(52,14,20,.8) 72%); transition:border-color .2s,box-shadow .2s; }
+.signal-row[data-tone=warn] .signal-mark { color:#ffa421; border-color:rgba(255,164,33,.26); background:radial-gradient(circle at 34% 26%,rgba(168,110,20,.4),rgba(46,32,12,.8) 72%); }
+/* Rien à signaler : la tuile s'éteint au lieu de crier en rouge. */
+.signal-row[data-tone=ok] .signal-mark { color:#8e8a8c; border-color:rgba(255,255,255,.1); background:rgba(255,255,255,.03); }
+.agents-panel .signal-row:hover .signal-mark { box-shadow:0 0 18px rgba(255,52,72,.24); }
+.agents-panel .signal-row[data-tone=ok]:hover .signal-mark { box-shadow:none; }
+
+.agents-panel .signal-row strong { color:#ff5364; font:700 24px/1 Manrope,Arial,sans-serif; letter-spacing:-1.2px; }
+.agents-panel .signal-row[data-tone=warn] strong { color:#ffa421; }
+/* Un zéro est une bonne nouvelle : il ne se lit pas en couleur d'alerte. */
+.agents-panel .signal-row[data-tone=ok] strong { color:#6c686a; }
+.agents-panel .signal-row small { line-height:1.5; }
+
+/* Liste complète, dépliée à la demande : le panneau n'exposait qu'un signal
+   sur huit et le bouton ne faisait rien. */
+.signal-list { margin:11px 0 2px; padding:0 0 0 13px; border-left:1px solid rgba(255,255,255,.09); list-style:none; }
+.signal-list li { position:relative; margin-top:8px; color:#a29e9f; font-size:10.5px; line-height:1.6; }
+.signal-list li:before { content:''; position:absolute; top:7px; left:-16px; width:5px; height:5px; border-radius:50%; background:rgba(255,64,84,.5); }
+.signal-row[data-tone=warn] .signal-list li:before { background:rgba(255,164,33,.5); }
+
+.agents-panel .text-button[aria-expanded=true] svg { transform:rotate(-90deg); }
+.agents-panel .text-button[aria-expanded=true]:hover svg { transform:rotate(-90deg) translateY(-4px); }
+
+/* ==================================================================
+   Bannière de conclusion (refonte). La conclusion des agents est un
+   texte long : elle est rendue en prose repliable sous un en-tête qui
+   porte la décision et l'indice, au lieu d'être empilée dans un titre.
+   ================================================================== */
+.agent-orb { width:46px; height:46px; margin:0; border-radius:14px; }
+
+/* ---------- Indice de risque : échelle à seuils, pas une note sur 100 ---------- */
+
+
+
+/* ---------- Conclusion en prose, repliée par défaut ---------- */
+.agent-conclusion { position:relative; overflow:hidden; max-height:104px; margin-top:20px; padding-top:18px; border-top:1px solid rgba(255,255,255,.07); transition:max-height .4s cubic-bezier(.3,.7,.3,1); }
+.agent-conclusion.is-open { max-height:1600px; }
+/* Fondu de coupe : le texte s'éteint au lieu d'être tranché net. */
+.agent-conclusion:not(.is-open):after { content:''; position:absolute; right:0; bottom:0; left:0; height:54px; pointer-events:none; background:linear-gradient(rgba(11,10,12,0),rgba(11,10,12,.94)); }
+.agent-conclusion-toggle { margin-top:14px; font-size:11.5px; }
+.agent-conclusion-toggle svg { transition:transform .25s; }
+.agent-conclusion-toggle[aria-expanded=true] svg { transform:rotate(-90deg); }
+
+@media(max-width:900px) {
+}
+@media(prefers-reduced-motion:reduce) {
+}
+
+/* ---------- Indice de risque : cadran gradué sur l'échelle réelle ---------- */
+.risk-gauge { position:relative; flex-shrink:0; display:grid; place-items:center; width:58px; height:58px; margin:0; }
+.risk-gauge svg { position:absolute; inset:0; overflow:visible; width:100%; height:100%; }
+/* Les trois bandes du cadran sont les trois verdicts ; leurs coupures
+   sont les seuils réels de decision.py (3 et 7). */
+/* Arc plein : la portion réellement atteinte par le score. */
+.risk-gauge-fill { fill:none; stroke-width:11; stroke-linecap:round; stroke-dasharray:var(--dash) 999; animation:risk-fill 1.15s cubic-bezier(.2,.7,.3,1) .3s both; }
+@keyframes risk-fill { from { stroke-dasharray:0 999; } to { stroke-dasharray:var(--dash) 999; } }
+/* Encoches des seuils, tracées par-dessus l'anneau. */
+.risk-gauge-tick { stroke:#0b0a0c; stroke-width:3.5; stroke-linecap:round; }
+.risk-gauge-cursor { fill:#faf9fa; stroke:#0b0a0c; stroke-width:3; animation:risk-cursor .55s cubic-bezier(.2,1.5,.4,1) 1.1s both; }
+@keyframes risk-cursor { from { opacity:0; transform:scale(.2); } to { opacity:1; transform:scale(1); } }
+
+.risk-gauge-value { position:relative; margin:0; color:#faf9fa; font:700 17px/1 Manrope,Arial,sans-serif; letter-spacing:-.7px; }
+
+
+@media(prefers-reduced-motion:reduce) {
+  .risk-gauge-fill,.risk-gauge-cursor { animation:none; }
+}
+
+/* ==================================================================
+   Verdict des agents — composition en 4 blocs : en-tête + citation à
+   gauche, cadran à droite, bande de métriques, actions.
+   ================================================================== */
+.agent-verdict {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 296px;
+  gap:18px;
+  margin-bottom:17px;
+  padding:22px;
+  border:1px solid rgba(255,92,106,.16);
+  border-radius:22px;
+  background:radial-gradient(ellipse 70% 60% at 18% 0%,rgba(150,26,40,.2),transparent 58%),linear-gradient(168deg,#131011 0%,#08090b 52%,#110a0d 100%);
+  box-shadow:inset 0 1px rgba(255,255,255,.03),0 28px 64px rgba(0,0,0,.36);
+}
+.agent-verdict-main { min-width:0; }
+
+/* ---------- En-tête ---------- */
+.agent-verdict-head { position:relative; display:grid; grid-template-columns:auto minmax(0,1fr); gap:20px; align-items:center; padding:6px 4px 20px; }
+/* Orbe encadré : liseré interne clair + halo, comme un module d'instrument. */
+.agent-verdict .agent-orb { position:relative; width:76px; height:76px; margin:0; border:1px solid rgba(255,92,106,.3); border-radius:22px; background:radial-gradient(circle at 34% 26%,rgba(196,52,68,.5),rgba(48,13,19,.92) 72%); box-shadow:0 0 34px rgba(255,64,84,.28),inset 0 1px rgba(255,255,255,.12); }
+.agent-verdict .agent-orb:after { content:''; position:absolute; inset:7px; border:1px solid rgba(255,92,106,.16); border-radius:16px; animation:none; }
+.agent-verdict-title { min-width:0; }
+.agent-verdict .panel-kicker { display:flex; align-items:center; gap:10px; margin:0 0 9px; font-size:10.5px; letter-spacing:1.7px; }
+.agent-verdict .panel-kicker i { width:6px; height:6px; border-radius:50%; background:#ff4054; box-shadow:0 0 9px #ff4054; animation:doc-live 2.4s ease-in-out infinite; }
+.agent-verdict h2 { margin:0; color:#faf9fa; font-size:32px; font-weight:800; line-height:1.15; letter-spacing:-1.5px; }
+.agent-verdict-badge { display:inline-flex; align-items:center; gap:8px; margin-top:12px; padding:8px 13px; border:1px solid rgba(255,92,106,.28); border-radius:9px; color:#ff8a94; background:rgba(255,64,84,.07); font-size:11.5px; font-weight:500; }
+.agent-verdict-badge svg { color:#ff5364; }
+/* Nappe de points : décor, posée derrière et coupée au bord du bloc. */
+.agent-wave { position:absolute; top:2px; right:0; width:300px; height:118px; pointer-events:none; fill:#ff4054; }
+
+/* ---------- Citation ---------- */
+.agent-quote { position:relative; padding:22px 24px 18px 74px; border:1px solid rgba(255,255,255,.07); border-radius:16px; background:linear-gradient(180deg,rgba(255,255,255,.022),rgba(255,255,255,.004)); }
+.agent-quote-mark { position:absolute; top:22px; left:22px; display:grid; place-items:center; width:38px; height:38px; border-radius:50%; color:#ff5364; border:1px solid rgba(255,92,106,.2); background:rgba(255,64,84,.07); font:700 26px/1 Manrope,Arial,sans-serif; }
+.agent-verdict .agent-conclusion { position:relative; overflow:hidden; max-height:132px; margin:0; padding:0; border:0; transition:max-height .4s cubic-bezier(.3,.7,.3,1); }
+.agent-verdict .agent-conclusion.is-open { max-height:2000px; }
+.agent-verdict .agent-conclusion:not(.is-open):after { content:''; position:absolute; right:0; bottom:0; left:0; height:52px; pointer-events:none; background:linear-gradient(rgba(12,11,13,0),rgba(12,11,13,.94)); }
+.agent-verdict .agent-conclusion p { max-width:74ch; margin:0 0 14px; color:#cdc8ca; font-size:13px; line-height:1.85; }
+.agent-verdict .agent-conclusion p:last-child { margin-bottom:0; }
+/* Valeurs citées par l'agent : chiffres et termes entre guillemets. */
+.agent-quote-hl { color:#ff5364; font-style:normal; font-weight:600; }
+.agent-verdict .agent-conclusion-toggle { margin-top:16px; font-size:12px; }
+.agent-verdict .agent-conclusion-toggle svg { transition:transform .25s; }
+.agent-verdict .agent-conclusion-toggle[aria-expanded=true] svg { transform:rotate(-90deg); }
+
+/* ---------- Cadran ---------- */
+.agent-gauge-card { display:flex; flex-direction:column; align-items:center; padding:20px 18px; border:1px solid rgba(255,255,255,.07); border-radius:18px; background:linear-gradient(180deg,rgba(255,255,255,.026),rgba(255,255,255,.005)); }
+.agent-gauge-title { color:#c3bdbf; font:600 11px Manrope,Arial,sans-serif; letter-spacing:1.6px; }
+.agent-verdict .risk-gauge { position:relative; display:grid; place-items:center; width:186px; height:186px; margin:6px 0 4px; }
+.agent-verdict .risk-gauge svg { position:absolute; inset:0; overflow:visible; width:100%; height:100%; }
+.agent-verdict .risk-gauge-fill { stroke-width:7; }
+.agent-verdict .risk-gauge-value { position:relative; display:flex; flex-direction:column; align-items:center; }
+.agent-verdict .risk-gauge-value strong { color:#faf9fa; font:700 58px/1 Manrope,Arial,sans-serif; letter-spacing:-3px; }
+.agent-gauge-card[data-tone=warn] .risk-gauge-value strong { color:#ffa421; }
+.agent-gauge-card[data-tone=bad] .risk-gauge-value strong { color:#ff4054; }
+.agent-verdict .risk-gauge-value small { margin-top:7px; color:#8d8a8b; font:500 14px Manrope,Arial,sans-serif; letter-spacing:.2px; }
+
+
+
+/* ---------- Bande de métriques ---------- */
+
+/* ---------- Actions ---------- */
+
+@media(max-width:1100px) {
+  .agent-verdict { grid-template-columns:1fr; }
+}
+@media(max-width:760px) {
+  .agent-verdict { padding:16px; }
+  .agent-verdict h2 { font-size:24px; }
+  .agent-wave { display:none; }
+  .agent-quote { padding:18px 16px 16px; }
+  .agent-quote-mark { position:static; margin-bottom:12px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .agent-verdict .panel-kicker i { animation:none; }
+}
+
+/* ---------- Cadran : piste neutre, arc coloré, encoches de seuil ---------- */
+/* Les trois bandes colorées ont été retirées : sous un arc rouge, une bande
+   « refus » rouge sombre devenait indistinguable du remplissage. La piste est
+   maintenant neutre et seules deux encoches marquent les seuils — l'arc qui
+   les dépasse se lit d'un coup d'œil. */
+.risk-gauge-track { fill:none; stroke:rgba(255,255,255,.07); stroke-width:8; stroke-linecap:round; }
+.agent-verdict .risk-gauge-track { stroke-width:7; }
+.risk-gauge-tick { stroke:rgba(255,255,255,.38); stroke-width:2.5; stroke-linecap:round; }
+.agent-verdict .risk-gauge-fill { stroke-width:7; }
+.agent-gauge-card[data-tone=ok] .risk-gauge-fill { stroke:#d7d2d4; filter:none; }
+.agent-gauge-card[data-tone=warn] .risk-gauge-fill { stroke:#ffa421; filter:drop-shadow(0 0 8px rgba(255,164,33,.5)); }
+.agent-gauge-card[data-tone=bad] .risk-gauge-fill { stroke:#ff4054; filter:drop-shadow(0 0 10px rgba(255,64,84,.6)); }
+/* Proportions resserrées : le nombre ne doit pas écraser l'arc. */
+.agent-verdict .risk-gauge { width:168px; height:168px; }
+.agent-verdict .risk-gauge-value strong { font-size:46px; letter-spacing:-2.2px; }
+.agent-verdict .risk-gauge-value small { margin-top:5px; font-size:12.5px; }
+/* Pastille du niveau : elle était quasi invisible sur le fond sombre. */
+
+/* ---------- Bandes de verdict ---------- */
+/* Remplace la pastille « NIVEAU » et la ligne « SEUILS », qui nommaient la
+   même chose chacune de son côté. Les trois bandes portent leurs bornes et
+   celle du score s'allume : la position relative se lit sans le cadran. */
+.risk-bands { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; width:100%; margin-top:16px; }
+.risk-bands>div { padding:11px 8px; border:1px solid rgba(255,255,255,.07); border-radius:11px; background:rgba(255,255,255,.018); text-align:center; transition:border-color .2s,background .2s; }
+.risk-bands b { display:block; color:#8a8688; font-size:11.5px; font-weight:600; letter-spacing:-.2px; }
+.risk-bands span { display:block; margin-top:4px; color:#5f5b5d; font:500 10px 'DM Mono',monospace; }
+/* Seule la bande atteinte est colorée : les autres restent des repères. */
+.risk-bands>div[data-actif] { border-color:currentColor; }
+.risk-bands>div[data-actif][data-tone=ok] { color:#d7d2d4; background:rgba(215,210,212,.09); }
+.risk-bands>div[data-actif][data-tone=warn] { color:#ffa421; background:rgba(255,164,33,.11); }
+.risk-bands>div[data-actif][data-tone=bad] { color:#ff4054; background:rgba(255,64,84,.12); box-shadow:0 0 18px rgba(255,64,84,.16); }
+.risk-bands>div[data-actif] b { color:currentColor; }
+.risk-bands>div[data-actif] span { color:currentColor; opacity:.72; }
+.risk-bands-legend { margin-top:11px; color:#6c686a; font-size:10px; text-align:center; }
+
+/* ---------- Action d'en-tête ---------- */
+/* Remplace la cloche et l'avatar factices : seule action réellement
+   manquante, revenir au dépôt pour ouvrir un autre dossier. */
+.header-action { display:flex; align-items:center; gap:9px; padding:9px 14px; border:1px solid rgba(255,255,255,.1); border-radius:9px; color:#c3bdbf; background:rgba(255,255,255,.02); font-size:12px; font-weight:500; transition:border-color .2s,color .2s,background .2s; }
+.header-action:hover { border-color:rgba(255,92,106,.4); color:#f4f0f1; background:rgba(255,64,84,.06); }
+.header-action svg { color:#ff5364; transition:transform .2s; }
+.header-action:hover svg { transform:translateX(-3px); }

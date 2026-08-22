@@ -27,6 +27,7 @@ dependencies = [
     "pymongo (>=4.17.0,<5.0.0)",
     "httpx (>=0.28.1,<0.29.0)",
     "fastapi (>=0.111.0,<0.112.0)",
+    "python-multipart (>=0.0.9,<1.0.0)",
     "uvicorn[standard] (>=0.30.0,<0.31.0)"
 ]
 
@@ -34,3 +35,7 @@ dependencies = [
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

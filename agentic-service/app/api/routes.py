@@ -15,6 +15,7 @@ import uuid
 from fastapi import APIRouter, HTTPException, status
 from langchain_core.messages import HumanMessage, ToolMessage
 
+from db.analysis_store import get_latest_analysis, save_analysis
 from db.history import list_analysis_history
 from graph.decision import decide_credit
 from graph.workflow import MAX_TOOL_ERRORS, build_workflow
@@ -116,6 +117,17 @@ def _extract_dscr(messages: list) -> dict | None:
             except (json.JSONDecodeError, TypeError):
                 return None
             return data.get("couverture_dette_dscr")
+    return None
+
+
+def _extract_garanties(messages: list) -> dict | None:
+    for message in reversed(messages):
+        if isinstance(message, ToolMessage) and message.name == "outil_rapport_financier":
+            try:
+                data = json.loads(message.content)
+            except (json.JSONDecodeError, TypeError):
+                return None
+            return data.get("analyse_garanties")
     return None
 
 
@@ -285,6 +297,7 @@ def analyze_client(client_id: str, taille: str | None = None):
     patterns = _extract_patterns(final_state["messages"])
     altman_score = _extract_altman_score(final_state["messages"])
     dscr = _extract_dscr(final_state["messages"])
+    garanties = _extract_garanties(final_state["messages"])
     tendances = _extract_tendances(final_state["messages"])
     validation = _extract_validation(final_state["messages"])
     conclusion = _inject_altman_sentence(conclusion, altman_score, patterns["coherence_altman"])
@@ -310,6 +323,7 @@ def analyze_client(client_id: str, taille: str | None = None):
             decision = decide_credit(
                 {
                     "dscr": dscr,
+                    "garanties": garanties,
                     "tendances": tendances,
                     "alertes_coherence": validation["alertes_coherence"] if validation else [],
                     "conformite_reglementaire": validation["conformite_reglementaire"] if validation else {},
@@ -330,7 +344,7 @@ def analyze_client(client_id: str, taille: str | None = None):
             logger.error(f"❌ Erreur lors de la décision de crédit du client '{client_id}' : {e}")
             decision = {"decision": None, "justification": None, "erreur": str(e)}
 
-    return {
+    resultat = {
         "client_id": client_id,
         "thread_id": thread_id,
         "tool_error_count": tool_error_count,
@@ -344,6 +358,7 @@ def analyze_client(client_id: str, taille: str | None = None):
         "altman_score": altman_score,
         "coherence_altman": patterns["coherence_altman"],
         "dscr": dscr,
+        "garanties": garanties,
         "tendances": tendances,
         "conformite_reglementaire": validation["conformite_reglementaire"] if validation else {},
         "alertes_coherence": validation["alertes_coherence"] if validation else [],
@@ -352,6 +367,29 @@ def analyze_client(client_id: str, taille: str | None = None):
         "conclusion": conclusion,
         "decision": decision,
     }
+
+    # Mise en cache du résultat complet : report-service le relit au lieu de
+    # relancer les deux agents pour produire le PDF (voir db/analysis_store.py).
+    save_analysis(client_id, resultat)
+    return resultat
+
+
+@router.get("/analysis/{client_id}", status_code=status.HTTP_200_OK)
+def get_last_analysis(client_id: str):
+    """
+    Dernier résultat d'analyse déjà calculé, sans relancer les agents.
+
+    Destiné aux consommateurs qui ont seulement besoin de lire un diagnostic
+    existant — report-service en premier lieu. 404 si le client n'a jamais
+    été analysé : à l'appelant de décider s'il déclenche un POST /analyze.
+    """
+    resultat = get_latest_analysis(client_id)
+    if resultat is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Aucune analyse enregistrée pour le client '{client_id}'.",
+        )
+    return resultat
 
 
 @router.post("/decision/test", status_code=status.HTTP_200_OK)

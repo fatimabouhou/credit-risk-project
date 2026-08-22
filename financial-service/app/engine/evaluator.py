@@ -1,10 +1,13 @@
 from typing import Dict, Any, Optional, List
 import logging
+import os
+import re
 
 from .ratios import RatiosHub
 from .trends import TrendsEngine
 from .dscr import DSCREngine
 from .scoring import ScoringEngine
+from .guarantees import assess_guarantees
 
 logger = logging.getLogger("EvaluatorService")
 
@@ -81,6 +84,61 @@ class FinancialEvaluator:
 
         return data
 
+    @staticmethod
+    def _parse_positive_number(value: Any) -> Optional[float]:
+        """Parse un montant extrait d'un PDF sans confondre texte invalide et zéro."""
+        if isinstance(value, (int, float)):
+            return float(value) if value > 0 else None
+        if not isinstance(value, str):
+            return None
+        normalized = value.replace("\u202f", "").replace(" ", "")
+        normalized = re.sub(r"[^0-9,.-]", "", normalized)
+        if not normalized:
+            return None
+        if "," in normalized and "." in normalized:
+            normalized = normalized.replace(".", "").replace(",", ".")
+        else:
+            normalized = normalized.replace(",", ".")
+        try:
+            parsed = float(normalized)
+        except ValueError:
+            return None
+        return parsed if parsed > 0 else None
+
+    @staticmethod
+    def _parse_duration_months(value: Any) -> Optional[int]:
+        if not isinstance(value, str):
+            parsed = FinancialEvaluator._parse_positive_number(value)
+            return int(parsed) if parsed is not None else None
+        match = re.search(r"(\d+(?:[,.]\d+)?)\s*(an|ans|année|années|mois)?", value.lower())
+        if not match:
+            return None
+        number = float(match.group(1).replace(",", "."))
+        unit = match.group(2) or "mois"
+        months = number * 12 if unit in {"an", "ans", "année", "années"} else number
+        return int(months) if months > 0 and months.is_integer() else None
+
+    @classmethod
+    def _extract_new_credit_terms(cls, mongo_document: Dict[str, Any]) -> tuple[Optional[float], Optional[int]]:
+        demande = mongo_document.get("profil_administratif", {}).get("demande_credit", {})
+        montant = cls._parse_positive_number(demande.get("montant_demande"))
+        return montant, cls._parse_duration_months(demande.get("duree"))
+
+    @staticmethod
+    def _annees_disponibles(mongo_document: Dict[str, Any]) -> List[int]:
+        """
+        Années réellement présentes dans historique_financier, triées de la
+        plus récente à la plus ancienne — plutôt que de supposer 2023/2022/2021
+        en dur : un dossier avec un seul exercice (ex. 2024 seul) n'a alors
+        aucune donnée sous "2023", et extract_flat_year_data renvoyait un
+        dict vide en silence (ratios/Altman/DSCR à 0 sans erreur explicite).
+        """
+        historique_list = mongo_document.get("historique_financier", {}).get("historique_financier", [])
+        annees = {
+            item.get("annee") for item in historique_list if isinstance(item.get("annee"), int)
+        }
+        return sorted(annees, reverse=True)
+
     @classmethod
     def evaluate_full_dossier(
         cls,
@@ -102,69 +160,91 @@ class FinancialEvaluator:
         client_id = mongo_document.get("client_id", "Inconnu")
         logger.info(f"⚡ Début de l'évaluation financière pour le dossier client : {client_id}")
 
-        # 1. Extraction et aplatissement des 3 années
-        data_2023 = cls.extract_flat_year_data(mongo_document, 2023)
-        data_2022 = cls.extract_flat_year_data(mongo_document, 2022)
-        data_2021 = cls.extract_flat_year_data(mongo_document, 2021)
+        # 1. Détermine N / N-1 / N-2 depuis les années réellement présentes dans
+        # le dossier (pas 2023/2022/2021 en dur) — un dossier à 1 seul exercice
+        # n'a alors que N, N-1/N-2 restent des dicts vides (déjà géré par
+        # TrendsEngine.analyze_trends, qui retombe sur 0.0 par indicateur).
+        annees = cls._annees_disponibles(mongo_document)
+        if not annees:
+            logger.warning(f"Aucun exercice trouvé dans historique_financier pour '{client_id}'")
+            return {
+                "client_id": client_id,
+                "statut_evaluation": "ECHEC",
+                "erreur": "Aucune donnée financière (historique_financier) trouvée dans le dossier.",
+            }
+        annee_n, annee_n_1, annee_n_2 = (annees + [None, None])[:3]
 
-        # 2. Enrichissement des données pour harmoniser les noms de variables
-        data_2023 = cls._enrich_year_data(data_2023)
-        data_2022 = cls._enrich_year_data(data_2022)
-        data_2021 = cls._enrich_year_data(data_2021)
+        # 2. Extraction, aplatissement et enrichissement de chaque année disponible
+        data_n = cls._enrich_year_data(cls.extract_flat_year_data(mongo_document, annee_n))
+        data_n_1 = cls._enrich_year_data(cls.extract_flat_year_data(mongo_document, annee_n_1)) if annee_n_1 else {}
+        data_n_2 = cls._enrich_year_data(cls.extract_flat_year_data(mongo_document, annee_n_2)) if annee_n_2 else {}
 
         # 3. Récupération de l'annuité pour le calcul du DSCR
         dette_info = mongo_document.get("comportement_bancaire", {}).get("dette_existante", {})
         mensualite_totale_annuelle = dette_info.get("mensualite_totale", {}).get("value", 0.0) * 12
+        montant_nouveau_credit, duree_nouveau_credit_mois = cls._extract_new_credit_terms(mongo_document)
+        taux_nouveau_credit = float(os.environ.get("DEFAULT_NEW_CREDIT_ANNUAL_RATE", "0.06"))
 
-        # Injecte l'annuité dans les données 2023 pour le RatiosHub
-        data_2023["annuite_emprunts"] = mensualite_totale_annuelle
+        # Injecte l'annuité dans les données N pour le RatiosHub
+        data_n["annuite_emprunts"] = mensualite_totale_annuelle
 
-        # 4. Calcul des Ratios sur l'année la plus récente (N = 2023)
-        ratios_2023 = RatiosHub.calculate_all_ratios(data_2023)
+        # 4. Calcul des Ratios sur l'année la plus récente (N)
+        ratios_n = RatiosHub.calculate_all_ratios(data_n)
 
-        # 5. Analyse des Tendances Historiques sur 3 ans (N, N-1, N-2)
+        # 5. Analyse des Tendances Historiques sur les exercices disponibles (N, N-1, N-2)
         tendances = TrendsEngine.analyze_trends(
-            data_n=data_2023,
-            data_n_1=data_2022,
-            data_n_2=data_2021
+            data_n=data_n,
+            data_n_1=data_n_1,
+            data_n_2=data_n_2
         )
 
         # 6. Calcul de la Capacité de Remboursement (DSCR)
-        ebitda_2023 = data_2023.get("ebitda", 0.0)
+        ebitda_n = data_n.get("ebitda", 0.0)
         dscr_analysis = DSCREngine.calculate_dscr(
-            ebitda=ebitda_2023,
-            annuite_emprunts=mensualite_totale_annuelle
+            ebitda=ebitda_n,
+            annuite_emprunts=mensualite_totale_annuelle,
+            montant_nouveau_credit=montant_nouveau_credit,
+            duree_nouveau_credit_mois=duree_nouveau_credit_mois,
+            taux_annuel_nouveau_credit=taux_nouveau_credit,
         )
+        dscr_analysis["montant_nouveau_credit"] = montant_nouveau_credit
+        dscr_analysis["duree_nouveau_credit_mois"] = duree_nouveau_credit_mois
+        dscr_analysis["taux_annuel_nouveau_credit"] = taux_nouveau_credit
+        garanties = mongo_document.get("garanties", {}).get("garanties", [])
+        garanties_analysis = assess_guarantees(garanties, montant_nouveau_credit)
 
         # 7. Score de défaillance Altman Z
         # (dettes_totales / total_dettes garanti non-nul par _enrich_year_data)
         altman_score = ScoringEngine.calculate_altman_z_score(
-            working_capital=data_2023.get("working_capital", 0.0),
-            total_assets=data_2023.get("total_actif", 0.0),
-            retained_earnings=data_2023.get("report_a_nouveau", 0.0),
-            ebit=data_2023.get("resultat_exploitation", 0.0),
-            book_value_equity=data_2023.get("capitaux_propres", 0.0),
-            total_liabilities=data_2023.get("total_dettes", 0.0),
-            sales=data_2023.get("chiffre_affaires", 0.0),
+            working_capital=data_n.get("working_capital", 0.0),
+            total_assets=data_n.get("total_actif", 0.0),
+            retained_earnings=data_n.get("report_a_nouveau", 0.0),
+            ebit=data_n.get("resultat_exploitation", 0.0),
+            book_value_equity=data_n.get("capitaux_propres", 0.0),
+            total_liabilities=data_n.get("total_dettes", 0.0),
+            sales=data_n.get("chiffre_affaires", 0.0),
             is_listed=is_listed,
             is_manufacturier=is_manufacturier,
             market_value_equity=market_value_equity,
         )
 
         # 8. Assemblage final
+        donnees_brutes_applaties = {str(annee_n): data_n}
+        if annee_n_1:
+            donnees_brutes_applaties[str(annee_n_1)] = data_n_1
+        if annee_n_2:
+            donnees_brutes_applaties[str(annee_n_2)] = data_n_2
+
         evaluation_report = {
             "client_id": client_id,
             "statut_evaluation": "SUCCÈS",
-            "annee_reference": 2023,
-            "ratios_financiers_n": ratios_2023,
+            "annee_reference": annee_n,
+            "ratios_financiers_n": ratios_n,
             "analyse_tendances_3ans": tendances,
             "couverture_dette_dscr": dscr_analysis,
+            "analyse_garanties": garanties_analysis,
             "altman_score": altman_score,
-            "donnees_brutes_applaties": {
-                "2023": data_2023,
-                "2022": data_2022,
-                "2021": data_2021
-            }
+            "donnees_brutes_applaties": donnees_brutes_applaties,
         }
 
         logger.info(f"✅ Évaluation financière terminée pour '{client_id}' !")

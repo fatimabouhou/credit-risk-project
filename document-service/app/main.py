@@ -1,10 +1,10 @@
 import os
 import sys
 import logging
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, File, Form, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 # -------------------------------------------------------------
 # GESTION DU PYTHONPATH
@@ -18,6 +18,10 @@ from services.document_processor import DocumentProcessor
 
 # Import du messager HTTP
 from infrastructure.http_client import notify_financial_service
+
+# Import du service d'upload (validation + rangement dans l'arborescence
+# attendue par DocumentProcessor, voir services/upload_service.py)
+from services.upload_service import CategorizedFile, save_uploaded_documents, validate_client_id
 
 # -------------------------------------------------------------
 # INITIALISATION FASTAPI & LOGS
@@ -36,7 +40,8 @@ app = FastAPI(
 # voir agentic-service/app/main.py pour le même besoin.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    # Vite may select 5174 when another local dev server owns 5173.
+    allow_origins=["http://localhost:5173", "http://localhost:5174"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -67,6 +72,13 @@ async def initialize_database():
             logger.info("📁 Collection 'client_audits' et BDD créées avec succès dans MongoDB !")
         else:
             logger.info("ℹ️ La collection 'client_audits' existe déjà dans MongoDB.")
+
+        # Index unique sur client_id : rend l'upsert de save_client_audit()
+        # réellement idempotent. Même raison que côté financial-service (voir
+        # son main.py) — sans cet index, deux extractions concurrentes du même
+        # client peuvent chacune insérer leur propre document au lieu d'en
+        # mettre un seul à jour.
+        db["client_audits"].create_index("client_id", unique=True)
     except Exception as e:
         logger.warning(f"⚠️ Impossible d'initialiser la BDD au démarrage : {str(e)}")
 
@@ -100,6 +112,51 @@ def get_client_audit(client_id: str) -> Dict[str, Any]:
             detail=f"Aucune donnée trouvée pour le client '{client_id}'. Le POST /analyze/{{client_id}} a-t-il déjà été exécuté ?"
         )
     return audit
+
+
+@app.post("/upload/{client_id}")
+async def upload_client_documents(
+    client_id: str,
+    files: List[UploadFile] = File(...),
+    categories: List[str] = Form(...),
+    years: List[str] = Form(...),
+) -> Dict[str, Any]:
+    """
+    Reçoit les PDF du dossier client depuis le frontend (page d'upload,
+    premier écran avant le dashboard) et les range dans l'arborescence que
+    POST /analyze/{client_id} attend déjà (01_administratif/02_conformite/
+    03_financier/04_bancaire) — n'extrait rien lui-même, juste le dépôt de
+    fichiers. `categories`/`years` sont deux listes parallèles à `files`
+    (même index = même fichier) : `years` vaut "" pour toute catégorie
+    différente de "bilan".
+    """
+    validate_client_id(client_id)
+
+    if not (len(files) == len(categories) == len(years)):
+        raise HTTPException(
+            status_code=400,
+            detail="'files', 'categories' et 'years' doivent avoir la même longueur.",
+        )
+
+    BASE_DIR = os.path.dirname(CURRENT_DIR)
+    folder_path = os.path.join(BASE_DIR, "simulators", client_id)
+
+    entries = [
+        CategorizedFile(file=f, category=c, year=y)
+        for f, c, y in zip(files, categories, years)
+    ]
+
+    try:
+        written = await save_uploaded_documents(folder_path, entries)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur lors de l'upload pour le client {client_id} : {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erreur interne lors de l'upload : {str(e)}")
+
+    nb_fichiers = sum(len(v) for v in written.values())
+    logger.info(f"📎 {nb_fichiers} document(s) reçu(s) pour le client '{client_id}'.")
+    return {"status": "success", "client_id": client_id, "documents_recus": written}
 
 
 @app.post("/analyze/{client_id}")

@@ -122,6 +122,7 @@ def outil_rapport_financier(client_id: str) -> str:
         "annee_reference": report.get("annee_reference"),
         "ratios_financiers_n": report.get("ratios_financiers_n"),
         "couverture_dette_dscr": report.get("couverture_dette_dscr"),
+        "analyse_garanties": report.get("analyse_garanties"),
         "altman_score": report.get("altman_score"),
     }
     return json.dumps(slim, ensure_ascii=False)

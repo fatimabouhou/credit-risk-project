@@ -37,12 +37,33 @@ async def fetch_extraction(client_id: str) -> dict:
         return response.json()
 
 
+# Lecture du diagnostic déjà calculé : simple SELECT Postgres, sans agent.
+_CACHE_TIMEOUT = 10.0
+
+
 async def fetch_analysis(client_id: str) -> dict:
     """
-    POST agentic-service/api/v1/agentic/analyze/{client_id} : lance
-    l'agent 1 (analyse) puis l'agent 2 (décision) et renvoie les deux
-    fusionnés.
+    Récupère l'analyse + décision du client.
+
+    D'ABORD en lecture du dernier résultat enregistré
+    (GET /analysis/{client_id}), et seulement à défaut en relançant les
+    agents (POST /analyze/{client_id}).
+
+    Sans cette lecture préalable, générer un rapport relançait les deux
+    agents LLM à chaque fois — y compris immédiatement après une analyse
+    affichée à l'écran, dont le résultat était donc jeté. C'était l'essentiel
+    du temps d'attente du rapport, pour un diagnostic déjà disponible.
     """
+    async with httpx.AsyncClient(timeout=_CACHE_TIMEOUT) as client:
+        try:
+            response = await client.get(f"{AGENTIC_SERVICE_URL}/api/v1/agentic/analysis/{client_id}")
+            if response.status_code == 200:
+                return response.json()
+        except httpx.RequestError:
+            # Service momentanément injoignable : on retente via l'analyse
+            # complète ci-dessous, qui remontera l'erreur si elle persiste.
+            pass
+
     async with httpx.AsyncClient(timeout=_ANALYSIS_TIMEOUT) as client:
         response = await client.post(f"{AGENTIC_SERVICE_URL}/api/v1/agentic/analyze/{client_id}")
         response.raise_for_status()

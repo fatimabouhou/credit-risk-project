@@ -123,16 +123,77 @@ services:
       - postgres
       - financial-service
       - document-service
+    # Les clés/modèles LLM sont lus depuis agentic-service/.env, pas depuis le
+    # .env racine : le Dockerfile ne copie que app/ (donc aucun .env n'existe
+    # dans l'image) et load_dotenv() ne trouvait rien à l'exécution. Sans
+    # env_file, deux conséquences réelles constatées :
+    #   - les clés GROQ éditées dans agentic-service/.env n'atteignaient jamais
+    #     le conteneur, qui repartait toujours sur ${GROQ_API_KEY} du .env racine ;
+    #   - OPENROUTER_API_KEY n'était passé nulle part, donc decision.py levait
+    #     KeyError et l'agent 2 renvoyait systématiquement "decision": null
+    #     (voir le try/except de api/routes.py) — la décision de crédit n'a
+    #     jamais pu aboutir sous Docker.
+    env_file:
+      - ./agentic-service/.env
     environment:
-      - GROQ_API_KEY=${GROQ_API_KEY}
       - CHROMA_HOST=chroma
       - CHROMA_PORT=8000
       - POSTGRES_CHECKPOINT_URI=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - FINANCIAL_SERVICE_URL=http://financial-service:8001
       - DOCUMENT_SERVICE_URL=http://document-service:8000
-      - LANGCHAIN_TRACING_V2=${LANGCHAIN_TRACING_V2}
-      - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY}
-      - LANGCHAIN_PROJECT=${LANGCHAIN_PROJECT}
+    # Le modèle d'embedding du RAG (BAAI/bge-m3, ~2 Go, voir tools/rag_tool.py)
+    # est téléchargé au premier usage dans le cache HuggingFace du conteneur.
+    # Sans ce volume, chaque recréation du conteneur repartait d'un cache vide :
+    # la première analyse restait bloquée plusieurs minutes sur le
+    # re-téléchargement avant de pouvoir répondre.
+    volumes:
+      - hf_cache:/root/.cache/huggingface
+    networks:
+      - credit_risk_network
+
+  # -------------------------------------------------------------
+  # 7. FRONTEND (Port 5173) - Dashboard React/Vite
+  # -------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: credit_risk_frontend
+    restart: on-failure
+    ports:
+      - "5173:5173"
+    depends_on:
+      - document-service
+      - financial-service
+      - agentic-service
+      - report-service
+    environment:
+      - VITE_FINANCIAL_API_URL=http://financial-service:8001/api/v1/financial
+      - VITE_AGENTIC_API_URL=http://agentic-service:8000/api/v1/agentic
+      - VITE_DOCUMENT_API_URL=http://document-service:8000
+      - VITE_REPORT_API_URL=http://report-service:8000/api/v1/report
+    networks:
+      - credit_risk_network
+
+  # -------------------------------------------------------------
+  # 8. REPORT SERVICE (Port 8003) - Génération du rapport de crédit
+  # final (PDF) : assemble extraction (document-service) + analyse et
+  # décision (agentic-service), aucun appel LLM propre à ce service.
+  # -------------------------------------------------------------
+  report-service:
+    build:
+      context: ./report-service
+      dockerfile: Dockerfile
+    container_name: report_service
+    restart: on-failure
+    ports:
+      - "8003:8000"
+    depends_on:
+      - document-service
+      - agentic-service
+    environment:
+      - DOCUMENT_SERVICE_URL=http://document-service:8000
+      - AGENTIC_SERVICE_URL=http://agentic-service:8000
     networks:
       - credit_risk_network
 
@@ -147,3 +208,6 @@ volumes:
   mongo_data:
   chroma_data:
   postgres_data:
+  # Cache du modèle d'embedding BAAI/bge-m3 (agentic-service) — évite un
+  # re-téléchargement de ~2 Go à chaque recréation du conteneur.
+  hf_cache:

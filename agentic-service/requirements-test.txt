@@ -1,0 +1,20 @@
+# Dépendances minimales pour faire tourner la suite de tests.
+#
+# Volontairement séparé de pyproject.toml : l'install complète du service tire
+# torch + sentence-transformers + chromadb (plusieurs Go) pour l'embedding RAG,
+# dont aucun test n'a besoin. La CI installerait ~2 Go pour exécuter des
+# fonctions pures.
+pytest>=8.3.3
+fastapi>=0.111.0
+python-dotenv>=1.0.1
+transformers>=4.44.0      # ingestion/chunker.py : AutoTokenizer (comptage de tokens)
+langgraph>=0.2.60         # graph/workflow.py
+langchain-core>=0.3.0
+langchain-groq>=0.2.1     # graph/planner.py
+langchain-openai>=0.2.0   # graph/decision.py
+# graph/decision.py importe pattern_tool, dont la chaîne d'import remonte
+# jusqu'à db/database_service.py (context_builder -> benchmark_tool -> rag_tool).
+chromadb-client>=1.5.9    # client léger, pas le serveur Chroma
+httpx>=0.28.1
+psycopg[binary]>=3.2.0
+langgraph-checkpoint-postgres>=2.0.13

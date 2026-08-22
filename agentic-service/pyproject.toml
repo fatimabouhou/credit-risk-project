@@ -12,7 +12,13 @@ fastapi = "^0.111.0"
 uvicorn = {extras = ["standard"], version = "^0.30.0"}
 transformers = "^4.44.0"
 sentencepiece = "^0.2.0"
-torch = "^2.4.0"
+# Source CPU-only : le conteneur n'a jamais accès à un GPU (aucune
+# réservation "devices" dans docker-compose.yml), et torch n'est utilisé
+# ici que pour faire tourner l'embedding bge-m3 (sentence-transformers) sur
+# CPU. Le wheel PyPI par défaut est la variante CUDA et tire ~10 paquets
+# nvidia-* (plusieurs Go, jamais utilisés) — voir la source pytorch-cpu
+# déclarée plus bas.
+torch = {version = "^2.4.0", source = "pytorch-cpu"}
 sentence-transformers = "^3.0.1"
 chromadb-client = "^1.5.9"
 httpx = "^0.28.1"
@@ -26,6 +32,11 @@ langchain-openai = "^0.2.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"
+
+[[tool.poetry.source]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+priority = "explicit"
 
 [tool.pytest.ini_options]
 pythonpath = ["app"]

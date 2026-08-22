@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api import routes as agentic_routes
 from db.checkpointer import get_postgres_checkpointer
+from ingestion.embedder import get_model as get_embedding_model
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("AgenticServiceAPI")
@@ -20,6 +21,8 @@ logger = logging.getLogger("AgenticServiceAPI")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    get_embedding_model()
+    logger.info("✅ Modèle d'embedding (BAAI/bge-m3) prêt.")
     with get_postgres_checkpointer() as checkpointer:
         checkpointer.setup()
         agentic_routes.checkpointer = checkpointer
@@ -41,7 +44,8 @@ app = FastAPI(
 # same-origin policy avant même d'atteindre les routes ci-dessous.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    # Vite may select 5174 when another local dev server owns 5173.
+    allow_origins=["http://localhost:5173", "http://localhost:5174"],
     allow_methods=["*"],
     allow_headers=["*"],
 )

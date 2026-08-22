@@ -92,6 +92,92 @@ class BankingExtractor:
 
         return data
 
+    # Mots-clés d'incident de paiement recherchés sur chaque ligne du relevé
+    # (rejet de chèque, prélèvement impayé...) — un seul comptage par ligne
+    # de mouvement, pas par mot trouvé.
+    _REJET_KEYWORDS = ("REJET", "IMPAYE", "IMPAYÉ")
+
+    def _extract_solde_depart(self, full_text: str) -> Optional[float]:
+        """"SOLDE DEPART AU 01 07 2023 5 000 000,00" -> 5000000.0 — point de
+        départ nécessaire pour reconstituer le solde ligne à ligne et détecter
+        un découvert (voir _compute_comportement).
+
+        Deux pièges gérés : (1) certains formats (Attijari) séparent la date
+        JJ MM AAAA par des espaces, comme le montant qui suit — on isole donc
+        d'abord la partie après la date pour ne pas mélanger leurs chiffres.
+        (2) le montant peut utiliser la virgule comme séparateur décimal
+        ("5 000 000,00") au lieu du point ("10,000,000.00") — les deux sont
+        acceptés en fin de nombre.
+        """
+        amount_pattern = re.compile(r'\d{1,3}(?:[,\s\.]\d{3})*(?:[.,]\d{2})?')
+        for line in full_text.split('\n'):
+            if "SOLDE DEPART" not in line.upper():
+                continue
+            date_match = re.search(r'\bAU\b\s*:?\s*\d{1,2}\s+\d{1,2}\s+\d{4}\s+(.+)', line, re.IGNORECASE)
+            remainder = date_match.group(1) if date_match else line
+            amounts = amount_pattern.findall(remainder)
+            if amounts:
+                return self.clean_amount(amounts[-1])
+        return None
+
+    def _compute_comportement(self, pdf, solde_depart: Optional[float]) -> tuple[int, float]:
+        """
+        Reconstitue le solde après chaque mouvement (dans l'ordre du relevé)
+        pour détecter un découvert (solde qui passe sous 0), et compte les
+        lignes signalant un incident de paiement (rejet/impayé).
+
+        Générique aux deux formats de relevé connus (Attijari : 7 colonnes
+        CODE/DATE/LIBELLE/VALEUR/DEBIT/CAPITAUX/CREDIT ; CIH : 5 colonnes
+        DATES/DATES/LIBELLE/DEBIT/CREDIT) : plutôt que de coder la position
+        des colonnes DEBIT/CREDIT en dur par banque, on les retrouve dans
+        chaque ligne d'en-tête de tableau (cellule contenant "DEBIT" /
+        "CREDIT") et on réutilise ces index pour les lignes de mouvement qui
+        suivent, jusqu'au prochain en-tête (repaginations).
+
+        Retourne (nombre_rejets, decouvert_max_detecte) — 0/0.0 si le solde
+        de départ ou les tableaux n'ont pas pu être lus (pas de fausse
+        détection plutôt qu'une supposition).
+        """
+        nombre_rejets = 0
+        debit_idx: Optional[int] = None
+        credit_idx: Optional[int] = None
+        solde_courant = solde_depart
+        decouvert_max = 0.0
+
+        for page in pdf.pages:
+            for table in page.extract_tables():
+                for row in table:
+                    cells = [str(c) if c is not None else "" for c in row]
+                    row_text = " ".join(cells).upper()
+
+                    # Ligne d'en-tête de ce tableau -> (re)localise les colonnes
+                    header_debit = next((i for i, c in enumerate(cells) if "DEBIT" in c.upper()), None)
+                    header_credit = next((i for i, c in enumerate(cells) if "CREDIT" in c.upper()), None)
+                    if header_debit is not None and header_credit is not None:
+                        debit_idx, credit_idx = header_debit, header_credit
+                        continue
+
+                    # Lignes de synthèse (solde départ/final, totaux) -> jamais
+                    # un mouvement réel, à exclure du solde ligne à ligne.
+                    if "SOLDE" in row_text or "TOTAL" in row_text:
+                        continue
+
+                    if any(kw in row_text for kw in self._REJET_KEYWORDS):
+                        nombre_rejets += 1
+
+                    if debit_idx is None or credit_idx is None or solde_courant is None:
+                        continue
+                    debit_val = self.clean_amount(cells[debit_idx]) if debit_idx < len(cells) else 0.0
+                    credit_val = self.clean_amount(cells[credit_idx]) if credit_idx < len(cells) else 0.0
+                    if debit_val == 0.0 and credit_val == 0.0:
+                        continue
+
+                    solde_courant += credit_val - debit_val
+                    if solde_courant < 0:
+                        decouvert_max = max(decouvert_max, -solde_courant)
+
+        return nombre_rejets, round(decouvert_max, 2)
+
     def extract_releve(self, pdf_path: str, banque_name: str) -> Dict[str, Any]:
         """Extrait les soldes, flux et comportements d'un relevé bancaire."""
         filename = os.path.basename(pdf_path)
@@ -144,6 +230,11 @@ class BankingExtractor:
                                     tot_cred += cred
                     data["total_debiteur"] = self._make_entry(tot_deb, filename, 1)
                     data["total_crediteur"] = self._make_entry(tot_cred, filename, 1)
+
+                solde_depart = self._extract_solde_depart(full_text)
+                nombre_rejets, decouvert_max = self._compute_comportement(pdf, solde_depart)
+                data["comportement"]["nombre_rejets"] = self._make_entry(nombre_rejets, filename, 1)
+                data["comportement"]["decouvert_max_detecte"] = self._make_entry(decouvert_max, filename, 1)
 
         except Exception as e:
             logger.error(f"Erreur Relevé {banque_name}: {e}")

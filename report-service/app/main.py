@@ -40,7 +40,8 @@ app = FastAPI(
 # server Vite) appelle cette API directement depuis le navigateur.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    # Vite may select 5174 when another local dev server owns 5173.
+    allow_origins=["http://localhost:5173", "http://localhost:5174"],
     allow_methods=["*"],
     allow_headers=["*"],
 )

@@ -31,6 +31,13 @@ def extract_all_transactions_from_pdf(pdf_path):
     
     realistic_transactions = [
         # JUILLET 2023
+        # Scenario decouvert + rejet ajoute avant la subvention : le solde
+        # initial (5M) ne suffit pas a couvrir ce virement urgent -> le solde
+        # cumule passe negatif pendant quelques jours, jusqu'a la subvention
+        # du 05/07 (voir doc/qst utilisateur : verifier extraction rejets/decouvert
+        # sur des donnees mock reelles plutot que du texte non teste).
+        ("2023-07-03", "DEBIT", 6500000.00, "VIREMENT URGENT FOURNISSEUR EQUIPEMENT"),
+        ("2023-07-04", "DEBIT", 15000.00, "REJET CHEQUE FOURNISSEUR IMPAYE"),
         ("2023-07-05", "CREDIT", 15000000.00, "VERSEMENT SUBVENTION BUDGET ETAT JUILLET"),
         ("2023-07-08", "DEBIT", 2500000.00, "PAIEMENT SALAIRES PERSONNEL JUIN"),
         ("2023-07-10", "DEBIT", 850000.00, "FACTURE ELECTRICITE STATIONS POMPAGE"),

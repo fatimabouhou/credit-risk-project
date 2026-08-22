@@ -7,6 +7,7 @@ services/report_generator.py). Ce service n'effectue aucun calcul ni
 aucune décision — il assemble et met en page ce qui existe déjà.
 """
 
+import asyncio
 import logging
 
 import httpx
@@ -26,8 +27,16 @@ async def _gather(client_id: str) -> tuple[dict, dict]:
     une 500 générique — utile pour diagnostiquer rapidement lequel des 2
     services en amont bloque la génération du rapport.
     """
+    extraction_task, analysis_task = await asyncio.gather(
+        fetch_extraction(client_id),
+        fetch_analysis(client_id),
+        return_exceptions=True,
+    )
+
     try:
-        extraction = await fetch_extraction(client_id)
+        if isinstance(extraction_task, BaseException):
+            raise extraction_task
+        extraction = extraction_task
     except httpx.HTTPStatusError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -44,7 +53,9 @@ async def _gather(client_id: str) -> tuple[dict, dict]:
         )
 
     try:
-        analysis = await fetch_analysis(client_id)
+        if isinstance(analysis_task, BaseException):
+            raise analysis_task
+        analysis = analysis_task
     except httpx.HTTPStatusError as e:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,

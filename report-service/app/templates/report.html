@@ -202,10 +202,23 @@
             {{ analyse.altman_score.score }} ({{ analyse.altman_score.model }}) — zone {{ analyse.altman_score.zone }}
         {% else %}N/A{% endif %}
     </div>
-    <div><span class="label">DSCR</span>
-        {% if analyse.dscr %}
-            {{ analyse.dscr.dscr }} ({{ "acceptable" if analyse.dscr.is_dscr_acceptable else "insuffisant" }})
-        {% else %}N/A{% endif %}
+    <div><span class="label">DSCR après nouveau crédit</span>
+        {% if analyse.dscr and analyse.dscr.dscr_apres_nouveau_credit is not none %}
+            {{ analyse.dscr.dscr_apres_nouveau_credit }} ({{ "acceptable" if analyse.dscr.is_dscr_apres_nouveau_credit_acceptable else "insuffisant" }})
+        {% else %}Non calculable{% endif %}
+    </div>
+    <div><span class="label">Mensualité du nouveau crédit</span>
+        {% if analyse.dscr and analyse.dscr.annuite_nouveau_credit is not none %}
+            {{ "%.2f"|format(analyse.dscr.annuite_nouveau_credit / 12) }} MAD / mois
+        {% else %}Non calculable{% endif %}
+    </div>
+    <div><span class="label">Annuité du nouveau crédit</span>
+        {% if analyse.dscr and analyse.dscr.annuite_nouveau_credit is not none %}
+            {{ "%.2f"|format(analyse.dscr.annuite_nouveau_credit) }} MAD / an
+        {% else %}Non calculable{% endif %}
+    </div>
+    <div><span class="label">DSCR existant</span>
+        {{ analyse.dscr.dscr_existant if analyse.dscr and analyse.dscr.dscr_existant is not none else "N/A" }}
     </div>
 </div>
 

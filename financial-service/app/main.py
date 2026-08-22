@@ -1,5 +1,6 @@
 import logging
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import router as evaluation_router
 
 # Configuration des logs
@@ -13,6 +14,15 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Le tableau de bord React (Vite) interroge directement l'API financière.
+app.add_middleware(
+    CORSMiddleware,
+    # Vite may select 5174 when another local dev server owns 5173.
+    allow_origins=["http://localhost:5173", "http://localhost:5174"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 # -------------------------------------------------------------
 # 🔥 INITIALISATION AUTOMATIQUE DE LA BDD AU DÉMARRAGE
@@ -24,11 +34,14 @@ async def initialize_database():
     'financial_evaluations' dès le démarrage du conteneur Docker.
     """
     try:
-        # Import basé sur ton arborescence : app.db.database_service
-        from app.db.database_service import DatabaseService
-
-        # Connexion à la BDD
-        db_service = DatabaseService()
+        # On réutilise l'instance de api/routes.py (celle qui sert réellement
+        # les requêtes) au lieu d'en créer une seconde : la version précédente
+        # instanciait ici un DatabaseService jetable, qui loggait "✅ Connexion
+        # réussie" alors que l'instance des routes, créée plus tôt à l'import
+        # (avant que MongoDB soit prêt), était définitivement hors service —
+        # les logs affichaient donc une connexion OK pendant que toutes les
+        # requêtes répondaient 404 "client introuvable".
+        from app.api.routes import db_service
 
         if db_service.db is not None:
             collections = db_service.db.list_collection_names()
@@ -37,6 +50,16 @@ async def initialize_database():
                 logger.info("📁 Collection 'financial_evaluations' et BDD créées avec succès !")
             else:
                 logger.info("ℹ️ La collection 'financial_evaluations' existe déjà dans MongoDB.")
+
+            # Index unique : sans lui, l'upsert de save_evaluation_report()
+            # n'est PAS atomique — deux évaluations concurrentes du même
+            # client (cas réel : document-service notifie financial-service en
+            # tâche de fond pendant que le frontend appelle /evaluate lui-même)
+            # ne trouvent ni l'une ni l'autre de document existant et insèrent
+            # chacune le leur. Constaté le 2026-08-17 : 2 documents 'ABSH'
+            # créés à la même seconde, l'un avec le score Altman calculé,
+            # l'autre avec des null — find_one() pouvant renvoyer le mauvais.
+            db_service.eval_collection.create_index("client_id", unique=True)
     except Exception as e:
         logger.warning(f"⚠️ Impossible d'initialiser la BDD au démarrage : {str(e)}")
 

@@ -1,0 +1,177 @@
+/* ==================================================================
+   Écran d'amorçage.
+
+   Toute la chorégraphie tient dans des délais CSS : une seule passe sur
+   le compositeur, aucune animation pilotée depuis React. Les propriétés
+   animées se limitent à transform / opacity / stroke-dashoffset / filter,
+   pour rester sur le GPU pendant que l'application se monte derrière.
+
+   Déroulé (4,8 s) :
+     0,0–0,8  cadrage      trame, vignette, équerres tracées
+     0,4–2,6  convergence  particules aspirées vers le centre
+     0,7–2,2  analyse      orbites tracées, satellites lâchés, balayage
+     2,5–3,0  allumage     noyau, double onde, éclair plein écran
+     2,9–3,6  marque       logotype resserré, baseline
+   ================================================================== */
+
+.splash {
+  position:fixed;
+  z-index:200;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  width:100%;
+  background:radial-gradient(ellipse 66% 54% at 50% 45%,#1a0d11 0%,#0a0809 46%,#050506 100%);
+  cursor:pointer;
+  animation:splash-in .5s ease both;
+}
+/* Sortie : poussée « caméra » à travers le noyau plutôt qu'un simple fondu. */
+.splash.is-leaving { animation:splash-out .7s cubic-bezier(.55,0,.3,1) forwards; }
+@keyframes splash-in { from { opacity:0; } to { opacity:1; } }
+@keyframes splash-out { to { opacity:0; transform:scale(1.35); filter:blur(14px); } }
+@keyframes splash-fade { to { opacity:1; } }
+
+/* ---------- Décor ---------- */
+.splash-grid { position:absolute; inset:0; background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px); background-size:44px 44px; -webkit-mask:radial-gradient(ellipse 54% 54% at 50% 45%,#000 6%,transparent 74%); mask:radial-gradient(ellipse 54% 54% at 50% 45%,#000 6%,transparent 74%); opacity:0; animation:splash-fade 1.2s ease .2s forwards; }
+/* Assombrit les bords : le regard tombe au centre sans y être poussé. */
+.splash-vignette { position:absolute; inset:0; pointer-events:none; background:radial-gradient(ellipse 62% 62% at 50% 45%,transparent 40%,rgba(4,4,5,.75) 100%); }
+/* Éclair plein écran au moment de l'allumage. */
+.splash-flash { position:absolute; inset:0; pointer-events:none; background:radial-gradient(ellipse 45% 45% at 50% 42%,rgba(255,120,132,.5),transparent 65%); opacity:0; animation:splash-eclair .75s cubic-bezier(.15,.8,.3,1) 2.5s forwards; }
+@keyframes splash-eclair { 0% { opacity:0; } 12% { opacity:.9; } 100% { opacity:0; } }
+
+/* Équerres : deux traits qui se tirent, pas une boîte qui apparaît. */
+.splash-hud { position:absolute; width:30px; height:30px; }
+.splash-hud:before,.splash-hud:after { content:''; position:absolute; background:rgba(255,64,84,.55); }
+.splash-hud:before { width:100%; height:1px; transform:scaleX(0); animation:splash-tire .45s cubic-bezier(.3,.85,.35,1) forwards; }
+.splash-hud:after { width:1px; height:100%; transform:scaleY(0); animation:splash-tire-v .45s cubic-bezier(.3,.85,.35,1) forwards; }
+.splash-hud--tl { top:32px; left:32px; }
+.splash-hud--tl:before { top:0; left:0; transform-origin:left; animation-delay:.15s; }
+.splash-hud--tl:after { top:0; left:0; transform-origin:top; animation-delay:.25s; }
+.splash-hud--tr { top:32px; right:32px; }
+.splash-hud--tr:before { top:0; right:0; transform-origin:right; animation-delay:.2s; }
+.splash-hud--tr:after { top:0; right:0; transform-origin:top; animation-delay:.3s; }
+.splash-hud--bl { bottom:32px; left:32px; }
+.splash-hud--bl:before { bottom:0; left:0; transform-origin:left; animation-delay:.25s; }
+.splash-hud--bl:after { bottom:0; left:0; transform-origin:bottom; animation-delay:.35s; }
+.splash-hud--br { bottom:32px; right:32px; }
+.splash-hud--br:before { bottom:0; right:0; transform-origin:right; animation-delay:.3s; }
+.splash-hud--br:after { bottom:0; right:0; transform-origin:bottom; animation-delay:.4s; }
+@keyframes splash-tire { to { transform:scaleX(1); } }
+@keyframes splash-tire-v { to { transform:scaleY(1); } }
+
+/* ---------- Scène centrale ---------- */
+.splash-stage { position:relative; flex-shrink:0; width:420px; height:420px; }
+.splash-stage>* { position:absolute; top:50%; left:50%; }
+
+/* Particules : convergent de l'extérieur vers le noyau, en 11 vagues. */
+.splash-particles { width:0; height:0; }
+.splash-particles i { position:absolute; top:0; left:0; width:3px; height:3px; margin:-1.5px 0 0 -1.5px; border-radius:50%; background:#ff4054; box-shadow:0 0 9px rgba(255,64,84,.9); opacity:0; animation:splash-converge 2.3s cubic-bezier(.4,0,.12,1) var(--retard) forwards; }
+@keyframes splash-converge {
+  0%   { opacity:0; transform:rotate(var(--angle)) translateX(360px) scale(1.5); }
+  16%  { opacity:1; }
+  86%  { opacity:.95; }
+  100% { opacity:0; transform:rotate(var(--angle)) translateX(46px) scale(.25); }
+}
+
+/* Orbites inclinées : chacune se trace, puis tourne à sa vitesse et dans
+   son sens. Le déphasage permanent donne la profondeur qu'un jeu de
+   cercles concentriques plats n'a jamais. */
+.splash-orbits { width:420px; height:420px; margin:-210px 0 0 -210px; overflow:visible; }
+.splash-orbit { transform-origin:210px 210px; animation:splash-tourne var(--duree) linear calc(2s + var(--retard)) infinite; animation-direction:var(--sens); }
+.splash-orbit ellipse {
+  fill:none;
+  stroke:#ff4054;
+  stroke-width:1;
+  stroke-dasharray:var(--perimetre);
+  stroke-dashoffset:var(--perimetre);
+  animation:splash-trace 1.4s cubic-bezier(.35,.75,.3,1) calc(.7s + var(--retard)) forwards;
+}
+/* Satellite : lâché une fois son orbite tracée. */
+.splash-satellite { fill:#ff5364; opacity:0; filter:drop-shadow(0 0 6px #ff4054); animation:splash-fade .5s ease calc(1.9s + var(--retard)) forwards; }
+@keyframes splash-trace { to { stroke-dashoffset:0; } }
+@keyframes splash-tourne { to { transform:rotate(360deg); } }
+
+/* Balayage : tourne vite pendant l'analyse, s'éteint à l'allumage. */
+.splash-sweep { width:260px; height:260px; margin:-130px 0 0 -130px; border-radius:50%; background:conic-gradient(from 0deg,rgba(255,64,84,.32),rgba(255,64,84,.04) 32deg,transparent 76deg); -webkit-mask:radial-gradient(farthest-side,transparent 28%,#000 30%); mask:radial-gradient(farthest-side,transparent 28%,#000 30%); opacity:0; animation:splash-fade .5s ease 1s forwards,splash-tourne-vite 1.5s linear 1s infinite,splash-eteint .5s ease 2.5s forwards; }
+@keyframes splash-tourne-vite { to { transform:rotate(360deg); } }
+@keyframes splash-eteint { to { opacity:0; } }
+
+/* Double onde de choc, décalée : une frappe sèche, un écho plus lent. */
+.splash-burst { width:110px; height:110px; margin:-55px 0 0 -55px; border:1.5px solid rgba(255,64,84,.9); border-radius:50%; opacity:0; animation:splash-burst .9s cubic-bezier(.15,.75,.3,1) 2.5s forwards; }
+.splash-burst--2 { border-color:rgba(255,64,84,.45); animation:splash-burst 1.3s cubic-bezier(.15,.75,.3,1) 2.66s forwards; }
+@keyframes splash-burst {
+  0%   { opacity:.95; transform:scale(.3); }
+  100% { opacity:0; transform:scale(3.2); }
+}
+
+/* Couronne de graduations autour du noyau : 60 traits, un tous les 6°. */
+.splash-ticks { width:150px; height:150px; margin:-75px 0 0 -75px; border-radius:50%; background:repeating-conic-gradient(from 0deg,rgba(255,120,132,.55) 0deg .7deg,transparent .7deg 6deg); -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 6px),#000 calc(100% - 6px)); mask:radial-gradient(farthest-side,transparent calc(100% - 6px),#000 calc(100% - 6px)); opacity:0; animation:splash-fade .6s ease 2.6s forwards,splash-tourne 40s linear 2.6s infinite; }
+
+/* Noyau : un emblème net, pas une boule floue — disque sombre, liseré
+   franc, glyphe des agents au centre, arc qui se referme autour. Même
+   grammaire que le cadran de risque et le scanner des agents. */
+.splash-core { display:grid; place-items:center; width:96px; height:96px; margin:-48px 0 0 -48px; border-radius:50%; color:#ff5364; border:1px solid rgba(255,92,106,.55); background:radial-gradient(circle at 34% 28%,rgba(128,30,42,.92) 0%,rgba(24,12,15,.98) 68%); box-shadow:0 0 50px rgba(255,64,84,.35),inset 0 1px rgba(255,255,255,.14); transform:scale(0); animation:splash-allume .95s cubic-bezier(.2,1.6,.35,1) 2.42s forwards,splash-respire 3.4s ease-in-out 3.5s infinite; }
+.splash-core svg { filter:drop-shadow(0 0 12px rgba(255,64,84,.7)); }
+.splash-core-arc { width:128px; height:128px; margin:-64px 0 0 -64px; border-radius:50%; background:conic-gradient(from 0deg,transparent 0 48%,rgba(255,64,84,.22) 66%,#ff4054 95%,transparent 100%); -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 2px),#000 calc(100% - 2px)); mask:radial-gradient(farthest-side,transparent calc(100% - 2px),#000 calc(100% - 2px)); opacity:0; animation:splash-fade .6s ease 2.62s forwards,splash-tourne-vite 2.4s linear 2.62s infinite; }
+@keyframes splash-allume { from { transform:scale(0); } to { transform:scale(1); } }
+@keyframes splash-respire { 0%,100% { transform:scale(1); } 50% { transform:scale(1.035); } }
+
+/* ---------- Marque ---------- */
+/* Tout ce qui suit la scène reste DANS le flux : la barre de progression
+   était en position:absolute et venait se poser exactement sur la baseline,
+   la barrant d'un trait rouge. Empilées en colonne, les lignes ne peuvent
+   plus se recouvrir, quelle que soit la hauteur de la fenêtre. */
+.splash-mark { position:relative; flex-shrink:0; margin-top:-46px; text-align:center; }
+/* Le logotype se resserre en arrivant : l'interlettrage part large et se
+   referme, un geste qui pose la marque au lieu de la faire apparaître. */
+.splash-mark h1 { margin:0; color:#faf9fa; font-size:46px; font-weight:800; letter-spacing:14px; opacity:0; animation:splash-pose 1.1s cubic-bezier(.16,.85,.28,1) 2.88s forwards; }
+.splash-mark h1 strong { color:#ff4054; font-weight:800; text-shadow:0 0 30px rgba(255,64,84,.6); }
+.splash-mark p { margin:16px 0 0; color:#8e8a8c; font-size:11.5px; letter-spacing:3px; text-transform:uppercase; opacity:0; animation:splash-monte .9s cubic-bezier(.2,.8,.3,1) 3.18s forwards; }
+@keyframes splash-pose {
+  from { opacity:0; letter-spacing:14px; filter:blur(5px); }
+  to   { opacity:1; letter-spacing:-2.2px; filter:blur(0); }
+}
+@keyframes splash-monte { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:none; } }
+
+/* ---------- Lecture d'état ---------- */
+/* Nomme les quatre étapes de la chaîne au moment où l'animation les joue.
+   Descriptif, pas un avancement mesuré : rien n'est chargé ici. */
+.splash-readout { position:relative; flex-shrink:0; height:14px; margin-top:26px; }
+.splash-readout span { position:absolute; top:0; left:50%; color:#ff8a94; font:600 10px 'DM Mono',monospace; letter-spacing:2.6px; white-space:nowrap; opacity:0; transform:translateX(-50%); animation:splash-etape 1.1s ease calc(.75s + var(--i) * .82s) forwards; }
+@keyframes splash-etape { 0% { opacity:0; } 22% { opacity:1; } 78% { opacity:1; } 100% { opacity:0; } }
+
+/* ---------- Progression ---------- */
+/* Durée fixe : la barre mesure la séquence, pas un chargement réel — elle
+   ne prétend donc à rien d'autre qu'annoncer la fin de l'animation. */
+.splash-progress { flex-shrink:0; overflow:hidden; width:210px; height:2px; margin-top:16px; border-radius:2px; background:rgba(255,255,255,.08); opacity:0; animation:splash-fade .4s ease .6s forwards; }
+.splash-progress i { display:block; width:100%; height:100%; border-radius:2px; background:linear-gradient(90deg,#8d1826,#ff4054); box-shadow:0 0 10px rgba(255,64,84,.5); transform:scaleX(0); transform-origin:left; animation:splash-remplit 4.2s cubic-bezier(.35,0,.2,1) .6s forwards; }
+@keyframes splash-remplit { to { transform:scaleX(1); } }
+
+.splash-skip { flex-shrink:0; margin-top:18px; color:#4f4749; font-size:10px; letter-spacing:1.2px; opacity:0; animation:splash-fade .7s ease 2.2s forwards; }
+
+@media(max-height:760px) {
+  .splash-stage { width:320px; height:320px; }
+  .splash-orbits { width:320px; height:320px; margin:-160px 0 0 -160px; }
+  .splash-mark { margin-top:-30px; }
+  .splash-mark h1 { font-size:34px; }
+  .splash-readout { margin-top:18px; }
+}
+@media(max-width:600px) {
+  .splash-mark h1 { font-size:28px; }
+  .splash-mark p { font-size:10px; letter-spacing:2px; }
+  .splash-hud { width:20px; height:20px; }
+}
+
+/* Sans animation : la marque s'affiche directement, la séquence est purgée. */
+@media(prefers-reduced-motion:reduce) {
+  .splash,.splash-grid,.splash-mark h1,.splash-mark p,.splash-progress,.splash-progress i,.splash-skip { animation:none; opacity:1; }
+  .splash-mark h1 { letter-spacing:-2.2px; }
+  .splash-particles,.splash-sweep,.splash-burst,.splash-orbits,.splash-core-arc,.splash-ticks,.splash-flash,.splash-readout { display:none; }
+  .splash-hud:before { transform:scaleX(1); animation:none; }
+  .splash-hud:after { transform:scaleY(1); animation:none; }
+  .splash-core { transform:scale(1); animation:none; }
+  .splash.is-leaving { opacity:0; transition:opacity .3s; }
+}

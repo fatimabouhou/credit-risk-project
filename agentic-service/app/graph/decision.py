@@ -56,6 +56,8 @@ _POINTS_ANOMALIE_GRAVE = 2
 _POINTS_ALTMAN_DISTRESS = 4
 _POINTS_ALTMAN_GREY = 2
 _POINTS_DSCR_INSUFFISANT = 3
+_POINTS_DSCR_NON_EVALUABLE = 5
+_POINTS_GARANTIE_COUVERTURE_INSUFFISANTE = 2
 _POINTS_TENDANCE_DEGRADEE = 2
 _POINTS_NON_CONFORMITE = 5
 _POINTS_INCIDENT_BAM = 5
@@ -130,6 +132,16 @@ def compute_risk_score(diagnostic: dict) -> dict:
     dscr = diagnostic.get("dscr") or {}
     if dscr.get("is_dscr_acceptable") is False:
         contributions.append({"label": "DSCR insuffisant", "points": _POINTS_DSCR_INSUFFISANT})
+    elif dscr.get("nouveau_credit_evaluable") is False:
+        contributions.append(
+            {"label": "DSCR après nouveau crédit non évaluable (montant ou durée manquant)", "points": _POINTS_DSCR_NON_EVALUABLE}
+        )
+
+    garanties = diagnostic.get("garanties") or {}
+    if garanties.get("evaluable") is True and garanties.get("couverture_pct", 0) < 100:
+        contributions.append(
+            {"label": "Couverture indicative des garanties inférieure à 100 %", "points": _POINTS_GARANTIE_COUVERTURE_INSUFFISANTE}
+        )
 
     if _is_tendance_degradee(diagnostic.get("tendances")):
         contributions.append({"label": "Tendance dégradée sur plusieurs indicateurs", "points": _POINTS_TENDANCE_DEGRADEE})

@@ -15,15 +15,49 @@ sert uniquement à faire apparaître cet appel comme un span "Retriever" dans
 LangSmith, nesté sous le tool LangChain qui l'appelle.
 """
 
+from functools import lru_cache
+
 from langsmith import traceable
 
 from db.database_service import query_similar
 from ingestion.embedder import embed_chunks
 from ingestion.models import Chunk
 
+# Cache des recherches, sur toute la durée de vie du process.
+#
+# Pourquoi c'est sûr : le corpus indexé dans Chroma (fiches de normes
+# sectorielles) est STATIQUE à l'exécution — il ne change qu'en relançant
+# manuellement le pipeline d'ingestion (ingestion/pipeline.py), ce qui
+# implique de toute façon un redémarrage du service. Une même question
+# renvoie donc toujours le même résultat.
+#
+# Pourquoi ça vaut le coup : benchmark_tool.py construit sa question à
+# partir du seul couple (ratio_name, secteur) — jamais du client ni de ses
+# valeurs. Les ~17 recherches d'un run (une par ratio) sont donc RIGOUREUSEMENT
+# identiques d'une analyse à l'autre pour un même secteur, et étaient
+# pourtant intégralement refaites à chaque fois. Chaque appel coûtait deux
+# fois cher : l'embedding de la question par bge-m3 (CPU) PUIS l'aller-retour
+# HTTP vers Chroma. Le cache supprime les deux.
+_SEARCH_CACHE_MAXSIZE = 512
+
+
+@lru_cache(maxsize=_SEARCH_CACHE_MAXSIZE)
+def _rag_search_cached(question: str, top_k: int, contains: str | None) -> tuple[dict, ...]:
+    """Implémentation réelle, mémoïsée. Retourne un tuple (immuable) plutôt
+    qu'une liste, pour qu'un appelant ne puisse pas altérer l'entrée en cache
+    partagée par tous les appels suivants."""
+    return tuple(_rag_search_uncached(question, top_k, contains))
+
 
 @traceable(name="Retriever (ChromaDB)", run_type="retriever")
 def rag_search(question: str, top_k: int = 3, contains: str | None = None) -> list[dict]:
+    """Voir _rag_search_uncached pour le détail. Passe par le cache, et
+    recopie chaque résultat : les appelants manipulent ainsi leurs propres
+    dicts, sans risque de corrompre le cache."""
+    return [dict(r) for r in _rag_search_cached(question, top_k, contains)]
+
+
+def _rag_search_uncached(question: str, top_k: int = 3, contains: str | None = None) -> list[dict]:
     """
     Retourne les top_k chunks les plus pertinents pour `question`.
 

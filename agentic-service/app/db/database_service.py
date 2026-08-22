@@ -30,6 +30,7 @@ CHROMA_PORT = int(os.environ.get("CHROMA_PORT", "8010"))
 COLLECTION_NAME = "fiches_financieres__bge_m3"
 
 _client: ClientAPI | None = None
+_collection = None
 
 
 def get_client() -> ClientAPI:
@@ -41,12 +42,22 @@ def get_client() -> ClientAPI:
 
 
 def get_collection():
-    """Récupère (ou crée) la collection Chroma dédiée à ce modèle d'embedding."""
-    client = get_client()
-    return client.get_or_create_collection(
-        name=COLLECTION_NAME,
-        metadata={"hnsw:space": "cosine"},
-    )
+    """
+    Récupère (ou crée) la collection Chroma dédiée à ce modèle d'embedding.
+    Mise en cache comme `get_client()` : avant ce cache, chaque `rag_search`
+    (voir tools/rag_tool.py) déclenchait un aller-retour HTTP `get_or_create_
+    collection` EN PLUS de la recherche elle-même — un run d'analyse complet
+    (~35 recherches RAG, voir benchmark_tool.py/context_builder.py) doublait
+    ainsi son trafic Chroma pour rien, la collection ne changeant jamais
+    entre deux appels au sein du même process.
+    """
+    global _collection
+    if _collection is None:
+        _collection = get_client().get_or_create_collection(
+            name=COLLECTION_NAME,
+            metadata={"hnsw:space": "cosine"},
+        )
+    return _collection
 
 
 def persist_embedded_chunks(embedded_chunks: list[EmbeddedChunk]) -> None:
