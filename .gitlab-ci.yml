@@ -194,7 +194,9 @@ security:sast:
 
 security:dependances:
   stage: test
-  image: aquasec/trivy:latest
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
   script:
     # Trivy lit les poetry.lock, que pip-audit ignore : c'est là que se
     # trouvaient les vulnérabilités les plus sévères du projet.
@@ -216,7 +218,9 @@ security:dependances:
 
 security:conteneurs:
   stage: test
-  image: aquasec/trivy:latest
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
   script:
     # Configuration des Dockerfiles et du compose : utilisateur privilégié,
     # image de base non épinglée, secrets en clair dans l'environnement.
