@@ -57,4 +57,16 @@ WORKDIR /code/app
 # Commande par défaut : lance le service FastAPI.
 # Pour tester le pipeline d'ingestion à la place, surcharge la commande
 # au lancement (voir README / commandes docker run ci-dessous).
+
+# Exécution sans privilèges. Deux particularités par rapport aux autres
+# services : l'arborescence est /code (pas /app), et le modèle d'embedding
+# écrit dans le cache HuggingFace au premier usage — ce cache doit donc
+# appartenir à appuser, d'où HF_HOME sous son répertoire personnel. Le volume
+# correspondant est remonté sur ce chemin dans docker-compose.yml.
+ENV HF_HOME=/home/appuser/.cache/huggingface
+RUN adduser --disabled-password --gecos "" appuser \
+    && mkdir -p /home/appuser/.cache/huggingface \
+    && chown -R appuser:appuser /code /home/appuser
+USER appuser
+
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

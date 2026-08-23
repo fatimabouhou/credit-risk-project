@@ -105,6 +105,7 @@ def get_client_audit(client_id: str) -> Dict[str, Any]:
     bancaire) sans relancer l'extraction. Utilisé par agentic-service
     pour lire le profil du client (secteur déclaré, raison sociale...).
     """
+    validate_client_id(client_id)
     audit = processor.db_service.get_client_audit(client_id)
     if not audit:
         raise HTTPException(
@@ -169,11 +170,23 @@ def analyze_client_folder(client_id: str, background_tasks: BackgroundTasks) -> 
     4. Enregistre automatiquement le JSON résultant dans MongoDB.
     5. Notifie le financial-service en arrière-plan.
     """
+    # Le client_id alimente un chemin de système de fichiers juste en dessous :
+    # sans ce contrôle, un identifiant contenant "../" sortait du dossier prévu
+    # et faisait extraire les PDF d'un répertoire arbitraire (lecture de
+    # fichiers hors périmètre). validate_client_id existait déjà et désignait
+    # nommément cette route, mais n'était appelée que depuis /upload.
+    validate_client_id(client_id)
     logger.info(f"Requête d'analyse reçue pour le client : {client_id}")
 
-    # Construction du chemin dynamique vers le dossier du client
+    # Construction du chemin dynamique vers le dossier du client. Le chemin est
+    # ensuite résolu et confiné sous la racine : défense en profondeur, pour que
+    # la sécurité ne repose pas uniquement sur la forme de l'identifiant.
     BASE_DIR = os.path.dirname(CURRENT_DIR)
-    folder_path = os.path.join(BASE_DIR, "simulators", client_id)
+    racine_clients = os.path.realpath(os.path.join(BASE_DIR, "simulators"))
+    folder_path = os.path.realpath(os.path.join(racine_clients, client_id))
+    if os.path.commonpath([racine_clients, folder_path]) != racine_clients:
+        logger.error(f"Chemin hors périmètre refusé pour le client : {client_id}")
+        raise HTTPException(status_code=400, detail="Identifiant client invalide.")
 
     # Vérification de l'existence du dossier
     if not os.path.exists(folder_path):

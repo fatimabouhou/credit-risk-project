@@ -16,7 +16,7 @@ de repasser par le checkpointer pour lire le contenu de chaque thread.
 import psycopg
 from langchain_core.messages import AIMessage
 
-from db.checkpointer import POSTGRES_CHECKPOINT_URI, get_postgres_checkpointer
+from db.checkpointer import _uri_requise, get_postgres_checkpointer
 
 
 def list_analysis_history(client_id: str) -> list[dict]:
@@ -25,7 +25,7 @@ def list_analysis_history(client_id: str) -> list[dict]:
     conclusion finale de l'agent (le dernier message IA sans appel
     d'outil) — trié du plus récent au plus ancien.
     """
-    with psycopg.connect(POSTGRES_CHECKPOINT_URI, autocommit=True) as conn:
+    with psycopg.connect(_uri_requise(), autocommit=True) as conn:
         with conn.cursor() as cur:
             cur.execute(
                 "SELECT DISTINCT thread_id FROM checkpoints WHERE thread_id LIKE %s",

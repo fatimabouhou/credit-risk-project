@@ -25,16 +25,14 @@ import logging
 
 import psycopg
 
-from db.checkpointer import POSTGRES_CHECKPOINT_URI
+from db.checkpointer import _uri_requise
 
 logger = logging.getLogger("AnalysisStore")
 
-_TABLE = "analysis_results"
-
 # Une seule ligne par client : seul le dernier résultat est réutilisable,
 # l'historique des runs restant du ressort du checkpointer (voir history.py).
-_SCHEMA = f"""
-CREATE TABLE IF NOT EXISTS {_TABLE} (
+_SCHEMA = """
+CREATE TABLE IF NOT EXISTS analysis_results (
     client_id  TEXT PRIMARY KEY,
     thread_id  TEXT,
     payload    JSONB NOT NULL,
@@ -56,12 +54,12 @@ def save_analysis(client_id: str, payload: dict) -> None:
     retombera simplement sur un recalcul, comme avant.
     """
     try:
-        with psycopg.connect(POSTGRES_CHECKPOINT_URI, autocommit=True) as conn:
+        with psycopg.connect(_uri_requise(), autocommit=True) as conn:
             with conn.cursor() as cur:
                 _ensure_table(cur)
                 cur.execute(
-                    f"""
-                    INSERT INTO {_TABLE} (client_id, thread_id, payload, created_at)
+                    """
+                    INSERT INTO analysis_results (client_id, thread_id, payload, created_at)
                     VALUES (%s, %s, %s, now())
                     ON CONFLICT (client_id) DO UPDATE
                         SET thread_id = EXCLUDED.thread_id,
@@ -77,11 +75,11 @@ def save_analysis(client_id: str, payload: dict) -> None:
 def get_latest_analysis(client_id: str) -> dict | None:
     """Dernier résultat complet du client, ou None si aucun run enregistré."""
     try:
-        with psycopg.connect(POSTGRES_CHECKPOINT_URI, autocommit=True) as conn:
+        with psycopg.connect(_uri_requise(), autocommit=True) as conn:
             with conn.cursor() as cur:
                 _ensure_table(cur)
                 cur.execute(
-                    f"SELECT payload FROM {_TABLE} WHERE client_id = %s",
+                    "SELECT payload FROM analysis_results WHERE client_id = %s",
                     (client_id,),
                 )
                 row = cur.fetchone()

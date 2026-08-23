@@ -7,7 +7,9 @@ services:
     container_name: credit_risk_mongodb
     restart: always
     ports:
-      - "27017:27017"
+      # MongoDB : réseau interne suffisant pour les services ; publié sur la
+      # seule boucle locale pour l'inspection depuis le poste de développement.
+      - "127.0.0.1:27017:27017"
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
@@ -21,12 +23,18 @@ services:
     container_name: mongo_express
     restart: always
     ports:
-      - "8081:8081"
+      # Administration MongoDB : jamais exposée hors du poste.
+      - "127.0.0.1:8081:8081"
     environment:
       ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_USER}
       ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_PASSWORD}
       ME_CONFIG_MONGODB_URL: mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongodb:27017/
-      ME_CONFIG_BASICAUTH: false
+      # Interface d'administration complète de MongoDB : sans authentification,
+      # elle donnait un accès en lecture ET en écriture à tous les dossiers
+      # clients à quiconque atteignait le port 8081.
+      ME_CONFIG_BASICAUTH: true
+      ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USER:-admin}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASSWORD:?definir MONGO_EXPRESS_PASSWORD dans .env}
     depends_on:
       - mongodb
     networks:
@@ -82,7 +90,8 @@ services:
     container_name: credit_risk_chroma
     restart: on-failure
     ports:
-      - "8010:8000"
+      # ChromaDB : idem, réseau interne pour agentic-service.
+      - "127.0.0.1:8010:8000"
     volumes:
       - chroma_data:/chroma/chroma
     networks:
@@ -97,7 +106,8 @@ services:
     container_name: credit_risk_postgres
     restart: on-failure
     ports:
-      - "5432:5432"
+      # PostgreSQL : idem, réseau interne pour agentic-service.
+      - "127.0.0.1:5432:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -147,7 +157,7 @@ services:
     # la première analyse restait bloquée plusieurs minutes sur le
     # re-téléchargement avant de pouvoir répondre.
     volumes:
-      - hf_cache:/root/.cache/huggingface
+      - hf_cache:/home/appuser/.cache/huggingface
     networks:
       - credit_risk_network
 

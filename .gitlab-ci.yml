@@ -141,6 +141,96 @@ test:frontend:
       allow_failure: true
 
 # =============================================================================
+# SÉCURITÉ
+#
+# Deux régimes distincts et assumés :
+#   - la détection de secrets BLOQUE la pipeline. Un secret commité ne se
+#     négocie pas : il doit être révoqué, pas discuté en revue.
+#   - l'analyse de code et de dépendances est en allow_failure le temps du
+#     tri. À durcir sur HIGH/CRITICAL une fois le bruit éliminé.
+#
+# Ces travaux tournent sur l'ensemble du dépôt, pas par service : une
+# vulnérabilité de dépendance ou un secret ne connaît pas ce découpage.
+# =============================================================================
+
+security:secrets:
+  stage: test
+  image:
+    name: zricethezav/gitleaks:latest
+    entrypoint: [""]
+  script:
+    # `git` et non `dir` : le risque est le secret présent dans l'HISTORIQUE,
+    # qu'un simple retrait du fichier ne supprime pas.
+    - gitleaks git --no-banner --redact --report-format sarif --report-path gitleaks.sarif
+  artifacts:
+    when: always
+    paths:
+      - gitleaks.sarif
+    expire_in: 1 month
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+security:sast:
+  stage: test
+  image: python:3.12-slim
+  cache:
+    key: pip-sast
+    paths:
+      - .cache/pip
+  before_script:
+    - pip install --quiet bandit semgrep
+  script:
+    # Bandit couvre Python, Semgrep couvre Python ET TypeScript — le frontend
+    # échapperait entièrement à l'analyse avec Bandit seul.
+    - bandit -r document-service/app financial-service/app agentic-service/app report-service/app
+    - semgrep scan --config=p/security-audit --config=p/owasp-top-ten --config=p/python
+      --config=p/typescript --config=p/react --config=p/docker
+      --metrics=off --error --exclude=node_modules --exclude=dist .
+  allow_failure: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+security:dependances:
+  stage: test
+  image: aquasec/trivy:latest
+  script:
+    # Trivy lit les poetry.lock, que pip-audit ignore : c'est là que se
+    # trouvaient les vulnérabilités les plus sévères du projet.
+    - trivy fs --quiet --scanners vuln --severity HIGH,CRITICAL
+      --skip-dirs frontend/node_modules
+      --format table --exit-code 0 .
+    - trivy fs --quiet --scanners vuln --severity CRITICAL
+      --skip-dirs frontend/node_modules
+      --format json --output trivy.json --exit-code 0 .
+  artifacts:
+    when: always
+    paths:
+      - trivy.json
+    expire_in: 1 month
+  allow_failure: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+security:conteneurs:
+  stage: test
+  image: aquasec/trivy:latest
+  script:
+    # Configuration des Dockerfiles et du compose : utilisateur privilégié,
+    # image de base non épinglée, secrets en clair dans l'environnement.
+    - trivy config --quiet --severity HIGH,CRITICAL,MEDIUM
+      --skip-dirs frontend/node_modules --exit-code 1 .
+  allow_failure: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - "**/Dockerfile"
+        - docker-compose.yml
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# =============================================================================
 # Vérification que le bundle de production se construit encore.
 # Séparé des tests : un build cassé et un test rouge ne se diagnostiquent pas
 # de la même façon.

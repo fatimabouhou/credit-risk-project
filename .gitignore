@@ -14,3 +14,12 @@ __pycache__/
 !.env.example
 
  document-service/simulators/data/
+
+# Dependances frontend : 1 495 fichiers etaient versionnes, ce qui alourdit
+# le depot, fige des paquets hors du gestionnaire et pollue toute analyse de
+# securite (les faux positifs "mot de passe en dur" en venaient tous).
+node_modules/
+
+# Rapports d'analyse
+bandit.json
+report-*.xml

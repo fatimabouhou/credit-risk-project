@@ -20,10 +20,21 @@ from langgraph.checkpoint.postgres import PostgresSaver
 
 load_dotenv()
 
-POSTGRES_CHECKPOINT_URI = os.environ.get(
-    "POSTGRES_CHECKPOINT_URI",
-    "postgresql://agentic:agentic_checkpoint_pwd@localhost:5432/agentic_checkpoints",
-)
+# Aucun mot de passe de repli versionné : une valeur en dur dans le dépôt finit
+# par être réutilisée telle quelle hors du poste de développement. L'absence de
+# variable est une erreur de configuration — signalée à l'USAGE et non à
+# l'import, pour que le module reste importable par les tests et la CI, qui
+# n'ouvrent jamais de connexion.
+POSTGRES_CHECKPOINT_URI = os.environ.get("POSTGRES_CHECKPOINT_URI")
+
+
+def _uri_requise() -> str:
+    if not POSTGRES_CHECKPOINT_URI:
+        raise RuntimeError(
+            "POSTGRES_CHECKPOINT_URI non définie. Renseignez-la dans "
+            "agentic-service/.env (voir docker-compose.yml pour le format)."
+        )
+    return POSTGRES_CHECKPOINT_URI
 
 
 def get_postgres_checkpointer():
@@ -34,4 +45,4 @@ def get_postgres_checkpointer():
     tables de checkpoint si elles n'existent pas encore (idempotent, sûr
     à rappeler à chaque démarrage).
     """
-    return PostgresSaver.from_conn_string(POSTGRES_CHECKPOINT_URI)
+    return PostgresSaver.from_conn_string(_uri_requise())

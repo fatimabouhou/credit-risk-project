@@ -30,6 +30,7 @@ seulement le tokenizer du modèle pour COMPTER les tokens, sans charger le
 modèle d'embedding lui-même (plus léger, plus rapide).
 """
 
+import os
 import re
 import threading
 from pathlib import Path
@@ -43,6 +44,9 @@ from ingestion.models import RawDocument, Chunk
 # fenêtre de contexte de 8192 tokens. Voir embedder.py pour le chargement
 # du modèle complet ; ici on ne charge que le tokenizer (léger).
 EMBEDDING_MODEL_NAME = "BAAI/bge-m3"
+# Commit du depot HuggingFace : a mettre a jour volontairement, jamais par
+# derive silencieuse. "main" reproduit le comportement precedent.
+EMBEDDING_MODEL_REVISION = os.environ.get("EMBEDDING_MODEL_REVISION", "main")
 
 _tokenizer = None
 _tokenizer_lock = threading.Lock()
@@ -60,7 +64,11 @@ def get_tokenizer():
     if _tokenizer is None:
         with _tokenizer_lock:
             if _tokenizer is None:
-                _tokenizer = AutoTokenizer.from_pretrained(EMBEDDING_MODEL_NAME)
+                # revision epinglee : sans elle, le contenu telecharge peut changer
+                # en amont sans que rien ne le signale (chaine d approvisionnement).
+                _tokenizer = AutoTokenizer.from_pretrained(
+                    EMBEDDING_MODEL_NAME, revision=EMBEDDING_MODEL_REVISION
+                )
     return _tokenizer
 
 
